@@ -1,6 +1,9 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -69,6 +72,12 @@ android {
     }
 }
 
+// Hilt's generated components reference each other before kapt has generated all of them;
+// this tells kapt to treat those forward references as stubs instead of hard errors.
+kapt {
+    correctErrorTypes = true
+}
+
 // Compose UI tests rely on androidx.compose.ui:ui-test-manifest, which supplies a test host
 // activity via manifest merging and is only wired up for the debug variant (see
 // debugImplementation dependency below). There is no release-specific behavior in this
@@ -91,12 +100,32 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
+    // ViewModel + StateFlow collection in Compose (issue #5: first ViewModel pattern).
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+
+    // DI (issue #5, docs/adr/0002-network-auth-architecture.md: Hilt introduced now).
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // Networking (issue #5, ADR 0002: Retrofit + OkHttp + kotlinx.serialization).
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    // Encrypted local storage for the auth token + server URL (ADR 0002).
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.2.1")
     testImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 

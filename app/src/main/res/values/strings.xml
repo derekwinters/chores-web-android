@@ -2,11 +2,28 @@
     <string name="app_name">Chores</string>
     <string name="nav_home">Home</string>
     <string name="nav_notification">Notification</string>
-    <string name="home_greeting">Hello World</string>
     <string name="notification_screen_title">Notifications</string>
     <string name="send_test_notification">Send Test Notification</string>
     <string name="notification_channel_name">Test Notifications</string>
     <string name="notification_channel_description">Channel used for test notifications triggered from the Notification screen</string>
     <string name="test_notification_title">Test Notification</string>
     <string name="test_notification_body">This is a test notification from Chores.</string>
+
+    <!-- Login screen (issue #5) -->
+    <string name="login_screen_title">Log in to Chores</string>
+    <string name="server_url_label">Server URL</string>
+    <string name="server_url_placeholder">http://192.168.1.10:8000</string>
+    <string name="username_label">Username</string>
+    <string name="password_label">Password</string>
+    <string name="login_button">Log In</string>
+
+    <!-- Chore list screen (issue #5) -->
+    <string name="chore_list_empty">No chores yet</string>
+    <string name="chore_completer_label">Completer</string>
+    <string name="chore_points_format">%1$d points</string>
+    <string name="chore_next_due_format">Next due: %1$s</string>
+    <string name="complete_chore_button">Complete</string>
+    <string name="completer_picker_title">Who completed this?</string>
+    <string name="completer_picker_confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
 </resources>

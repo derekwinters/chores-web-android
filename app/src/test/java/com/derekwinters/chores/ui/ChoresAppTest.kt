@@ -1,5 +1,6 @@
 package com.derekwinters.chores.ui
 
+import androidx.compose.material3.Text
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -10,7 +11,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Behavior: Bottom nav bar wiring Home <-> Notification screens (area: ui)
+ * Behaviors: bottom nav bar wiring Home <-> Notification (area: ui, issue #2) and Login screen
+ * gating the Scaffold (area: ui, android, issue #5). Uses [ChoresAppContent]'s injectable
+ * login/home slots so this doesn't require a Hilt test component — see LoginContentTest and
+ * ChoreListContentTest for the real screens' own behavior coverage.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33])
@@ -20,18 +24,42 @@ class ChoresAppTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun choresApp_startsOnHomeScreen() {
+    fun choresApp_signedOut_showsLoginContent() {
         composeTestRule.setContent {
-            ChoresApp(onSendTestNotification = {})
+            ChoresAppContent(
+                isAuthenticated = false,
+                onSendTestNotification = {},
+                loginContent = { Text("Fake Login") },
+                homeContent = { Text("Fake Home") }
+            )
         }
 
-        composeTestRule.onNodeWithText("Hello World").assertExists()
+        composeTestRule.onNodeWithText("Fake Login").assertExists()
+    }
+
+    @Test
+    fun choresApp_signedIn_startsOnHomeTab() {
+        composeTestRule.setContent {
+            ChoresAppContent(
+                isAuthenticated = true,
+                onSendTestNotification = {},
+                loginContent = { Text("Fake Login") },
+                homeContent = { Text("Fake Home") }
+            )
+        }
+
+        composeTestRule.onNodeWithText("Fake Home").assertExists()
     }
 
     @Test
     fun choresApp_bottomNav_navigatesToNotificationScreen() {
         composeTestRule.setContent {
-            ChoresApp(onSendTestNotification = {})
+            ChoresAppContent(
+                isAuthenticated = true,
+                onSendTestNotification = {},
+                loginContent = { Text("Fake Login") },
+                homeContent = { Text("Fake Home") }
+            )
         }
 
         composeTestRule.onNodeWithText("Notification").performClick()
@@ -40,14 +68,19 @@ class ChoresAppTest {
     }
 
     @Test
-    fun choresApp_bottomNav_navigatesBackToHomeScreen() {
+    fun choresApp_bottomNav_navigatesBackToHomeTab() {
         composeTestRule.setContent {
-            ChoresApp(onSendTestNotification = {})
+            ChoresAppContent(
+                isAuthenticated = true,
+                onSendTestNotification = {},
+                loginContent = { Text("Fake Login") },
+                homeContent = { Text("Fake Home") }
+            )
         }
 
         composeTestRule.onNodeWithText("Notification").performClick()
         composeTestRule.onNodeWithText("Home").performClick()
 
-        composeTestRule.onNodeWithText("Hello World").assertExists()
+        composeTestRule.onNodeWithText("Fake Home").assertExists()
     }
 }
