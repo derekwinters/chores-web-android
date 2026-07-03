@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.AuthLogEntry
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
 
 /**
  * Issue #21: admin-only audit log for auth-related events, separate from the chore Activity Log.
@@ -98,8 +99,9 @@ fun AuthLogContent(
 private fun AuthLogRow(entry: AuthLogEntry) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text("${entry.action}: ${entry.username}", style = MaterialTheme.typography.titleSmall)
-            Text(entry.timestamp, style = MaterialTheme.typography.bodySmall)
+            Text(entry.action, style = MaterialTheme.typography.titleSmall)
+            Text(entry.username, style = MaterialTheme.typography.bodyMedium)
+            Text(formatDateTime(entry.timestamp), style = MaterialTheme.typography.bodySmall)
             entry.changedBy?.let { Text("Changed by: $it", style = MaterialTheme.typography.bodySmall) }
         }
     }

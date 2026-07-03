@@ -8,26 +8,41 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.CHORE_POINT_OPTIONS
 import com.derekwinters.chores.ui.UiState
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeParseException
 
 /**
  * Issue #16: chore create/edit form, chores-web's `ChoreForm.jsx` equivalent — the richest
@@ -67,6 +82,7 @@ fun ChoreFormScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChoreFormContent(
     formState: ChoreFormState,
@@ -127,14 +143,51 @@ fun ChoreFormContent(
         }
 
         if (isEditMode) {
+            var showDatePicker by remember { mutableStateOf(false) }
+
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 value = formState.nextDue.orEmpty(),
-                onValueChange = { value -> onFormChange { it.copy(nextDue = value.ifBlank { null }) } },
-                label = { Text("Next Due (YYYY-MM-DD)") },
+                onValueChange = {},
+                label = { Text("Next Due") },
                 singleLine = true,
-                enabled = !isSaving
+                readOnly = true,
+                enabled = !isSaving,
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }, enabled = !isSaving) {
+                        Icon(Icons.Filled.DateRange, contentDescription = "Next Due")
+                    }
+                }
             )
+
+            if (showDatePicker) {
+                val initialSelectedMillis = formState.nextDue?.let { raw ->
+                    try {
+                        LocalDate.parse(raw).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                    } catch (e: DateTimeParseException) {
+                        null
+                    }
+                }
+                val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialSelectedMillis)
+
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                                onFormChange { it.copy(nextDue = selectedDate.toString()) }
+                            }
+                            showDatePicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
         }
 
         SectionLabel("Assignment")

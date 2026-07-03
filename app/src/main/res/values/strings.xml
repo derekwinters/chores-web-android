@@ -102,8 +102,10 @@
 
     <!-- Dashboard screen (issue #12) -->
     <string name="dashboard_empty">No people added yet…</string>
-    <string name="dashboard_7_day_progress">7-day: %1$d / %2$d pts</string>
-    <string name="dashboard_30_day_progress">30-day: %1$d / %2$d pts</string>
-    <string name="dashboard_due_now_format">Due Now: %1$d</string>
-    <string name="dashboard_due_soon_format">Due Soon: %1$d</string>
+    <string name="dashboard_7_day_label">Last 7 Days</string>
+    <string name="dashboard_30_day_label">Last 30 Days</string>
+    <string name="dashboard_points_unit">pts</string>
+    <string name="dashboard_goal_format">Goal: %1$d pts</string>
+    <string name="dashboard_due_now_label">Due Now</string>
+    <string name="dashboard_due_soon_label">Due Soon</string>
 </resources>

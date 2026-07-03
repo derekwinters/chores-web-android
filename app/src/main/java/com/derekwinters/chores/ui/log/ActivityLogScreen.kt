@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -24,10 +25,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.LogEntry
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
+import java.time.Duration
+import java.time.Instant
+import java.time.format.DateTimeParseException
 
 /**
  * Issue #19: chores-web's unified Activity Log — filters, pagination, and row-expand detail with
@@ -117,6 +123,8 @@ fun ActivityLogContent(
 @Composable
 private fun LogRow(entry: LogEntry) {
     var expanded by remember { mutableStateOf(false) }
+    val isPersonTarget = entry.choreId == 0
+    val targetName = entry.choreName.removePrefix("Person: ")
 
     Card(
         modifier = Modifier
@@ -125,10 +133,20 @@ private fun LogRow(entry: LogEntry) {
             .clickable { expanded = !expanded }
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text("${entry.action}: ${entry.choreName}", style = MaterialTheme.typography.titleSmall)
-            Text("${entry.person} · ${entry.timestamp}", style = MaterialTheme.typography.bodySmall)
+            AssistChip(
+                modifier = Modifier.testTag("targetTypeChip"),
+                onClick = {},
+                label = { Text(if (isPersonTarget) "User" else "Chore") }
+            )
+            Text(entry.action, style = MaterialTheme.typography.titleSmall)
+            Text(targetName, style = MaterialTheme.typography.titleSmall)
+            Text(
+                "${entry.person} · ${formatRelativeTimestamp(entry.timestamp)}",
+                style = MaterialTheme.typography.bodySmall
+            )
 
             if (expanded) {
+                Text("Timestamp: ${formatDateTime(entry.timestamp)}", style = MaterialTheme.typography.bodySmall)
                 entry.assignee?.let { Text("Assigned to: $it", style = MaterialTheme.typography.bodySmall) }
                 entry.reassignedTo?.let { Text("Reassigned to: $it", style = MaterialTheme.typography.bodySmall) }
                 if (entry.isAmendment) {
@@ -139,5 +157,28 @@ private fun LogRow(entry: LogEntry) {
                 }
             }
         }
+    }
+}
+
+/**
+ * Issue #33: relative-timestamp thresholds/strings mirror chores-web's `formatRelativeTimestamp`
+ * exactly. Falls back to the raw string unchanged if it can't be parsed, same defensive pattern
+ * as #31's `formatNextDue`.
+ */
+private fun formatRelativeTimestamp(raw: String): String {
+    return try {
+        val instant = Instant.parse(raw)
+        val duration = Duration.between(instant, Instant.now())
+        val minutes = duration.toMinutes()
+        val hours = duration.toHours()
+        val days = duration.toDays()
+        when {
+            minutes < 1 -> "just now"
+            minutes < 60 -> "${minutes}m ago"
+            hours < 24 -> "${hours}h ago"
+            else -> "${days}d ago"
+        }
+    } catch (e: DateTimeParseException) {
+        raw
     }
 }

@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.derekwinters.chores.data.model.PointsLogEntry
 import com.derekwinters.chores.data.repository.PointsLogPage
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -65,5 +66,38 @@ class PointsLogContentTest {
         composeTestRule.onNodeWithText("Delete").performClick()
 
         assert(deletedId == 1)
+    }
+
+    @Test
+    fun pointsLogContent_rendersFormattedTimestamp() {
+        val timestampedEntry = entry.copy(completedAt = "2026-07-02T22:40:54.326377Z")
+        composeTestRule.setContent {
+            PointsLogContent(
+                uiState = UiState.Success(PointsLogPage(listOf(timestampedEntry), total = 1, offset = 0, limit = 20)),
+                onUpdate = { _, _, _ -> },
+                onDelete = {},
+                onNextPage = {},
+                onPreviousPage = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Chore #4 · ${formatDateTime("2026-07-02T22:40:54.326377Z")}").assertExists()
+    }
+
+    @Test
+    fun pointsLogContent_malformedTimestamp_fallsBackToRawString() {
+        // entry.completedAt = "2026-07-01" is date-only, so Instant.parse throws and this
+        // exercises the raw-string fallback path.
+        composeTestRule.setContent {
+            PointsLogContent(
+                uiState = UiState.Success(PointsLogPage(listOf(entry), total = 1, offset = 0, limit = 20)),
+                onUpdate = { _, _, _ -> },
+                onDelete = {},
+                onNextPage = {},
+                onPreviousPage = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Chore #4 · 2026-07-01").assertExists()
     }
 }

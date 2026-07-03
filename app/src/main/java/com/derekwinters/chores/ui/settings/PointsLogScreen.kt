@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.PointsLogEntry
 import com.derekwinters.chores.data.repository.PointsLogPage
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
 
 /**
  * Issue #23: admin table for directly correcting historical point credits — paginated (offset-
@@ -124,7 +125,7 @@ private fun PointsLogRow(entry: PointsLogEntry, onClick: () -> Unit) {
         Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text(entry.person, style = MaterialTheme.typography.titleSmall)
-                Text("Chore #${entry.choreId} · ${entry.completedAt}", style = MaterialTheme.typography.bodySmall)
+                Text("Chore #${entry.choreId} · ${formatDateTime(entry.completedAt)}", style = MaterialTheme.typography.bodySmall)
             }
             Text("${entry.points} pts")
         }

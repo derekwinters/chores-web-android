@@ -1,6 +1,7 @@
 package com.derekwinters.chores.ui.chores
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -79,5 +80,71 @@ class ChoreFormContentTest {
         }
 
         composeTestRule.onNodeWithText("Name is required").assertExists()
+    }
+
+    // Issue #32: Next Due switches from free-text entry to a Material3 DatePickerDialog
+    // (edit-mode only).
+
+    @Test
+    fun choreFormContent_nextDueField_tapIconOpensDatePicker() {
+        composeTestRule.setContent {
+            ChoreFormContent(
+                formState = ChoreFormState(nextDue = "2026-07-05"),
+                availablePeople = emptyList(),
+                saveState = UiState.Idle,
+                isEditMode = true,
+                onFormChange = {},
+                onSave = {},
+                onCancel = {}
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Next Due").performScrollTo().performClick()
+
+        // Just "OK" -- the form's own Cancel button also matches the text "Cancel", so asserting
+        // on the dialog's Cancel button by text alone would be ambiguous.
+        composeTestRule.onNodeWithText("OK").assertExists()
+    }
+
+    @Test
+    fun choreFormContent_nextDueDatePicker_confirmingPreSelectedValue_keepsIsoDate() {
+        var latest = ChoreFormState(nextDue = "2026-07-05")
+        composeTestRule.setContent {
+            ChoreFormContent(
+                formState = latest,
+                availablePeople = emptyList(),
+                saveState = UiState.Idle,
+                isEditMode = true,
+                onFormChange = { update -> latest = update(latest) },
+                onSave = {},
+                onCancel = {}
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Next Due").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("OK").performClick()
+
+        assert(latest.nextDue == "2026-07-05")
+    }
+
+    @Test
+    fun choreFormContent_nextDueDatePicker_nullValue_opensWithNoSelectionAndDoesNotSetADate() {
+        var latest = ChoreFormState(nextDue = null)
+        composeTestRule.setContent {
+            ChoreFormContent(
+                formState = latest,
+                availablePeople = emptyList(),
+                saveState = UiState.Idle,
+                isEditMode = true,
+                onFormChange = { update -> latest = update(latest) },
+                onSave = {},
+                onCancel = {}
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Next Due").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("OK").performClick()
+
+        assert(latest.nextDue == null)
     }
 }

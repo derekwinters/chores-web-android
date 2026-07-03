@@ -2,7 +2,6 @@ package com.derekwinters.chores.ui.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.ui.UiState
@@ -117,25 +118,48 @@ private fun DashboardUserCard(
             }
 
             ProgressRow(
-                label = stringResource(R.string.dashboard_7_day_progress, card.points7d, card.goal7d),
+                headerLabel = stringResource(R.string.dashboard_7_day_label),
+                value = card.points7d,
+                goal = card.goal7d,
                 progress = progressFraction(card.points7d, card.goal7d),
                 trend = card.trend7d
             )
             ProgressRow(
-                label = stringResource(R.string.dashboard_30_day_progress, card.points30d, card.goal30d),
+                headerLabel = stringResource(R.string.dashboard_30_day_label),
+                value = card.points30d,
+                goal = card.goal30d,
                 progress = progressFraction(card.points30d, card.goal30d),
                 trend = card.trend30d
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             ) {
-                TextButton(onClick = { navActions.onNavigateToChores(card.username, null) }) {
-                    Text(stringResource(R.string.dashboard_due_now_format, card.dueNowCount))
+                TextButton(
+                    modifier = Modifier.weight(1f).testTag("dueNowButton"),
+                    onClick = { navActions.onNavigateToChores(card.username, null) }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.dashboard_due_now_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = card.dueNowCount.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-                TextButton(onClick = { navActions.onNavigateToChores(card.username, DueWithinFilter.NEXT_3_DAYS.name) }) {
-                    Text(stringResource(R.string.dashboard_due_soon_format, card.dueSoonCount))
+                TextButton(
+                    modifier = Modifier.weight(1f).testTag("dueSoonButton"),
+                    onClick = { navActions.onNavigateToChores(card.username, DueWithinFilter.NEXT_3_DAYS.name) }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.dashboard_due_soon_label), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = card.dueSoonCount.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -143,13 +167,30 @@ private fun DashboardUserCard(
 }
 
 @Composable
-private fun ProgressRow(label: String, progress: Float, trend: TrendStatus) {
+private fun ProgressRow(headerLabel: String, value: Int, goal: Int, progress: Float, trend: TrendStatus) {
     Column(modifier = Modifier.padding(top = 8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall)
+        Text(text = headerLabel, style = MaterialTheme.typography.bodySmall)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = trendColor(trend)
+            )
+            Text(
+                text = " " + stringResource(R.string.dashboard_points_unit),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         LinearProgressIndicator(
             progress = progress,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             color = trendColor(trend)
+        )
+        Text(
+            text = stringResource(R.string.dashboard_goal_format, goal),
+            style = MaterialTheme.typography.bodySmall
         )
     }
 }

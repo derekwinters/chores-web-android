@@ -39,6 +39,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.data.model.Chore
 import com.derekwinters.chores.ui.UiState
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.util.Locale
 
 /**
  * Issue #5 behaviors: "Chore list screen: GET /chores, render name/assignee-or-Completer/
@@ -274,17 +278,13 @@ private fun ChoreRow(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = chore.name, style = MaterialTheme.typography.titleMedium)
 
-            val assigneeLabel = chore.currentAssignee ?: stringResource(R.string.chore_completer_label)
-            Text(text = assigneeLabel, style = MaterialTheme.typography.bodyMedium)
+            chore.currentAssignee?.let {
+                Text(text = it, style = MaterialTheme.typography.bodyMedium)
+            }
 
-            Text(
-                text = stringResource(R.string.chore_points_format, chore.points),
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(text = chore.state, style = MaterialTheme.typography.bodySmall)
             chore.nextDue?.let {
                 Text(
-                    text = stringResource(R.string.chore_next_due_format, it),
+                    text = stringResource(R.string.chore_next_due_format, formatNextDue(it)),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -293,32 +293,18 @@ private fun ChoreRow(
                 ChoreDetailSection(chore = chore)
 
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.Start) {
-                    if (isPendingAction) {
+                    if (isCompleting || isPendingAction) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
                     } else {
-                        TextButton(onClick = onEdit) { Text(stringResource(R.string.chore_edit_action)) }
-                        TextButton(onClick = onHistory) { Text(stringResource(R.string.chore_history_action)) }
                         if (chore.isDue) {
+                            Button(onClick = onCompleteClick) { Text(stringResource(R.string.complete_chore_button)) }
                             TextButton(onClick = onSkip) { Text(stringResource(R.string.chore_skip_action)) }
                         } else {
                             TextButton(onClick = onMarkDue) { Text(stringResource(R.string.chore_mark_due_action)) }
                         }
+                        TextButton(onClick = onEdit) { Text(stringResource(R.string.chore_edit_action)) }
+                        TextButton(onClick = onHistory) { Text(stringResource(R.string.chore_history_action)) }
                         TextButton(onClick = { showDeleteConfirm = true }) { Text(stringResource(R.string.chore_delete_action)) }
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                if (isCompleting) {
-                    CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
-                } else {
-                    Button(onClick = onCompleteClick) {
-                        Text(stringResource(R.string.complete_chore_button))
                     }
                 }
             }
@@ -340,6 +326,19 @@ private fun ChoreRow(
                 TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
+    }
+}
+
+/**
+ * Issue #31: formats a raw ISO `yyyy-MM-dd` `next_due` string as e.g. "Jul 2" (matching web's
+ * `toLocaleDateString(undefined, { month: "short", day: "numeric" })`), falling back to the raw
+ * string unchanged if it can't be parsed.
+ */
+private fun formatNextDue(raw: String): String {
+    return try {
+        LocalDate.parse(raw).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
+    } catch (e: DateTimeParseException) {
+        raw
     }
 }
 

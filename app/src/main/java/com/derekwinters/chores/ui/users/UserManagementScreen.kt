@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.Person
@@ -160,7 +161,7 @@ private fun PersonRow(person: Person, onClick: () -> Unit, onHistoryClick: () ->
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.clickableRow(onClick)) {
-                Text(person.displayName, style = MaterialTheme.typography.titleSmall)
+                Text(person.displayName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text(person.username, style = MaterialTheme.typography.bodySmall)
             }
             TextButton(onClick = onHistoryClick) { Text("History") }

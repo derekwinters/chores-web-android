@@ -46,6 +46,25 @@ class BaseUrlInterceptorTest {
     }
 
     @Test
+    fun rewritesRequest_whenStoredServerUrlHasNoScheme_defaultsToHttp() {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("ok"))
+        // User-entered URL with no "http://"/"https://" prefix, e.g. a bare LAN IP:port
+        // (network_security_config.xml documents this as the typical self-hosted deployment).
+        val bareHostAndPort = "${server.hostName}:${server.port}"
+        val credentialStore = FakeCredentialStore(serverUrl = bareHostAndPort)
+        val client = OkHttpClient.Builder()
+            .addInterceptor(BaseUrlInterceptor(credentialStore))
+            .build()
+
+        val response = client.newCall(
+            Request.Builder().url("http://placeholder.invalid/v1/chores").build()
+        ).execute()
+
+        assertEquals(200, response.code)
+        assertEquals("/v1/chores", server.takeRequest().path)
+    }
+
+    @Test
     fun leavesRequestUnchanged_whenNoServerUrlStored() {
         server.enqueue(MockResponse().setResponseCode(200))
         val credentialStore = FakeCredentialStore(serverUrl = null)

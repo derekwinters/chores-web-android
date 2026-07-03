@@ -8,9 +8,11 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.derekwinters.chores.data.model.AppConfig
+import com.derekwinters.chores.data.model.UpdateCheckStatus
 import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.network.dto.ConfigDto
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -84,5 +86,55 @@ class SettingsContentTest {
         composeTestRule.onNodeWithText("Check Now").performScrollTo().performClick()
 
         assert(checked)
+    }
+
+    @Test
+    fun settingsContent_lastChecked_formatsIsoTimestamp() {
+        val status = UpdateCheckStatus(
+            currentVersion = "1.0.0",
+            latestVersion = "1.0.0",
+            lastCheckedAt = "2026-07-02T22:40:54.326377Z",
+            checkEnabled = true,
+            checkIntervalHours = 24,
+            updateAvailable = false
+        )
+        composeTestRule.setContent {
+            SettingsContent(
+                uiState = UiState.Success(ConfigDto().toDomain()),
+                saveState = UiState.Idle,
+                updateStatus = status,
+                navActions = SettingsNavActions(),
+                onSave = {},
+                onCheckForUpdates = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Last checked: ${formatDateTime("2026-07-02T22:40:54.326377Z")}")
+            .performScrollTo()
+            .assertExists()
+    }
+
+    @Test
+    fun settingsContent_lastChecked_malformedTimestamp_fallsBackToRawString() {
+        val status = UpdateCheckStatus(
+            currentVersion = "1.0.0",
+            latestVersion = "1.0.0",
+            lastCheckedAt = "not-a-timestamp",
+            checkEnabled = true,
+            checkIntervalHours = 24,
+            updateAvailable = false
+        )
+        composeTestRule.setContent {
+            SettingsContent(
+                uiState = UiState.Success(ConfigDto().toDomain()),
+                saveState = UiState.Idle,
+                updateStatus = status,
+                navActions = SettingsNavActions(),
+                onSave = {},
+                onCheckForUpdates = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Last checked: not-a-timestamp").performScrollTo().assertExists()
     }
 }

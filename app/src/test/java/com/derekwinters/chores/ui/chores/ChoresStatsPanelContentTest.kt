@@ -1,15 +1,31 @@
 package com.derekwinters.chores.ui.chores
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.derekwinters.chores.ui.UiState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+
+/**
+ * Reads the requested [androidx.compose.ui.text.TextStyle.fontSize] directly off the node's
+ * text layout result, rather than measuring rendered pixel bounds — Robolectric's headless text
+ * measurement doesn't reliably scale reported bounds with font size, so bounds-based "is this
+ * visually bigger" assertions are flaky here even when the styling is correct.
+ */
+private fun SemanticsNodeInteraction.textFontSizeSp(): Float {
+    val results = mutableListOf<TextLayoutResult>()
+    performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+    return results.first().layoutInput.style.fontSize.value
+}
 
 /** Issue #14 behavior: collapsible stats panel (area: ui, android). */
 @RunWith(AndroidJUnit4::class)
@@ -44,5 +60,17 @@ class ChoresStatsPanelContentTest {
 
         composeTestRule.onNodeWithContentDescription("Expand stats panel").performClick()
         composeTestRule.onNodeWithText("27").assertExists()
+    }
+
+    @Test
+    fun statsPanel_valueText_usesLargerTypographyThanLabelText() {
+        composeTestRule.setContent {
+            ChoresStatsPanelContent(uiState = UiState.Success(stats), initiallyExpanded = true)
+        }
+
+        val labelFontSize = composeTestRule.onNodeWithText("Total Chores").textFontSizeSp()
+        val valueFontSize = composeTestRule.onNodeWithText("5").textFontSizeSp()
+
+        assert(valueFontSize > labelFontSize)
     }
 }

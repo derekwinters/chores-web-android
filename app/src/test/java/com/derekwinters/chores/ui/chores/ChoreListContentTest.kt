@@ -46,7 +46,7 @@ class ChoreListContentTest {
     )
 
     @Test
-    fun choreListContent_rendersNameAssigneePointsStateNextDue() {
+    fun choreListContent_rendersCollapsedNameAssigneeNextDue() {
         composeTestRule.setContent {
             ChoreListContent(
                 uiState = UiState.Success(listOf(assignedChore)),
@@ -57,13 +57,29 @@ class ChoreListContentTest {
 
         composeTestRule.onNodeWithText("Dishes").assertExists()
         composeTestRule.onNodeWithText("alice").assertExists()
-        composeTestRule.onNodeWithText("5 points").assertExists()
-        composeTestRule.onNodeWithText("due").assertExists()
-        composeTestRule.onNodeWithText("Next due: 2026-07-05").assertExists()
+        composeTestRule.onNodeWithText("Next due: Jul 5").assertExists()
+        composeTestRule.onNodeWithText("5 points").assertDoesNotExist()
+        composeTestRule.onNodeWithText("due").assertDoesNotExist()
     }
 
     @Test
-    fun choreListContent_unassignedChore_showsCompleterPlaceholder() {
+    fun choreListContent_expandChore_showsPointsAndStatusDetail() {
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(assignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> }
+            )
+        }
+
+        composeTestRule.onNodeWithText("Dishes").performClick()
+
+        composeTestRule.onNodeWithText("Points: 5").assertExists()
+        composeTestRule.onNodeWithText("Status: due").assertExists()
+    }
+
+    @Test
+    fun choreListContent_unassignedChore_hidesCollapsedAssigneeText() {
         composeTestRule.setContent {
             ChoreListContent(
                 uiState = UiState.Success(listOf(unassignedChore)),
@@ -72,7 +88,22 @@ class ChoreListContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Completer").assertExists()
+        composeTestRule.onNodeWithText("Completer").assertDoesNotExist()
+    }
+
+    @Test
+    fun choreListContent_unassignedChore_expandedShowsCompleterPlaceholder() {
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(unassignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> }
+            )
+        }
+
+        composeTestRule.onNodeWithText("Trash").performClick()
+
+        composeTestRule.onNodeWithText("Assignee: Completer").assertExists()
     }
 
     @Test
@@ -86,6 +117,7 @@ class ChoreListContentTest {
             )
         }
 
+        composeTestRule.onNodeWithText("Dishes").performClick()
         composeTestRule.onNodeWithText("Complete").performClick()
 
         assert(completed == (assignedChore to null))
@@ -102,6 +134,7 @@ class ChoreListContentTest {
             )
         }
 
+        composeTestRule.onNodeWithText("Trash").performClick()
         composeTestRule.onNodeWithText("Complete").performClick()
         composeTestRule.onNodeWithText("Who completed this?").assertExists()
 
@@ -127,6 +160,7 @@ class ChoreListContentTest {
             )
         }
 
+        composeTestRule.onNodeWithText("Trash").performClick()
         composeTestRule.onNodeWithText("Complete").performClick()
         composeTestRule.onNodeWithText("bob").performClick()
         composeTestRule.onNodeWithText("Confirm").performClick()

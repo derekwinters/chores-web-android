@@ -6,9 +6,11 @@ import kotlinx.serialization.Serializable
  * Response element for `GET /v1/log`, chores-web's unified Activity Log (issue #19), also reused
  * (filtered) for the User Detail chore-activity feed (issue #17) and the Chore card History link
  * (issue #15). Matches the backend's `ChoreLogOut` schema exactly (see the real OpenAPI spec):
- * every log entry is chore-scoped (`chore_id`/`chore_name` always present) — there is no generic
- * "target" abstraction, unlike an earlier pass that guessed a `target_type`/`target_name`/`actor`
- * shape from GitHub issue text alone.
+ * there is no literal `target_type`/`target_name` JSON field, but target type *is* encoded on the
+ * wire via a documented sentinel (issue #33): person-log rows are merged into this unified
+ * response with `chore_id == 0` (the backend's own "UserLog sentinel") and
+ * `chore_name == "Person: {name}"`. Prefer checking `chore_id == 0` over string-matching
+ * `chore_name` when deriving target type client-side — same condition, more robust.
  */
 @Serializable
 data class LogEntryDto(

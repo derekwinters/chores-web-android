@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.AppConfig
 import com.derekwinters.chores.data.model.UpdateCheckStatus
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
 
 /** Issue #20/#21/#22/#24: cross-screen nav callbacks the Settings destination needs. */
 data class SettingsNavActions(
@@ -137,7 +138,7 @@ fun SettingsContent(
                     if (updateStatus?.updateAvailable == true) {
                         Text("Update available!", color = MaterialTheme.colorScheme.error)
                     }
-                    Text("Last checked: ${updateStatus?.lastCheckedAt ?: "never"}")
+                    Text("Last checked: ${updateStatus?.lastCheckedAt?.let(::formatDateTime) ?: "never"}")
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.derekwinters.chores.data.model.AuthLogEntry
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDateTime
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +40,13 @@ class AuthLogContentTest {
 
     @Test
     fun authLogContent_rendersEntryWithChangedBy() {
-        val entry = AuthLogEntry(id = 1, timestamp = "2026-07-01", username = "bob", action = "password_reset", changedBy = "admin")
+        val entry = AuthLogEntry(
+            id = 1,
+            timestamp = "2026-07-02T22:40:54.326377Z",
+            username = "bob",
+            action = "password_reset",
+            changedBy = "admin"
+        )
         composeTestRule.setContent {
             AuthLogContent(
                 uiState = UiState.Success(AuthLogPageState(listOf(entry), total = 1, page = 1)),
@@ -50,7 +57,25 @@ class AuthLogContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("password_reset: bob").assertExists()
+        composeTestRule.onNodeWithText("password_reset").assertExists()
+        composeTestRule.onNodeWithText("bob").assertExists()
+        composeTestRule.onNodeWithText(formatDateTime("2026-07-02T22:40:54.326377Z")).assertExists()
         composeTestRule.onNodeWithText("Changed by: admin").assertExists()
+    }
+
+    @Test
+    fun authLogContent_malformedTimestamp_fallsBackToRawString() {
+        val entry = AuthLogEntry(id = 2, timestamp = "not-a-timestamp", username = "carol", action = "login_failed", changedBy = null)
+        composeTestRule.setContent {
+            AuthLogContent(
+                uiState = UiState.Success(AuthLogPageState(listOf(entry), total = 1, page = 1)),
+                filters = AuthLogFilters(),
+                onFiltersChange = {},
+                onNextPage = {},
+                onPreviousPage = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("not-a-timestamp").assertExists()
     }
 }

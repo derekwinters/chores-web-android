@@ -24,7 +24,7 @@ class BaseUrlInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
-        val serverUrl = credentialStore.getServerUrl()?.toHttpUrlOrNull()
+        val serverUrl = credentialStore.getServerUrl()?.let(::withDefaultScheme)?.toHttpUrlOrNull()
             ?: return chain.proceed(original)
 
         val rewrittenUrl = original.url.newBuilder()
@@ -36,3 +36,14 @@ class BaseUrlInterceptor @Inject constructor(
         return chain.proceed(original.newBuilder().url(rewrittenUrl).build())
     }
 }
+
+/**
+ * A user-entered server URL commonly omits the scheme (e.g. a bare LAN IP:port), which
+ * [toHttpUrlOrNull] can't parse — without this, [BaseUrlInterceptor] would silently fall back to
+ * leaving the request pointed at [com.derekwinters.chores.di.NetworkModule]'s unreachable
+ * placeholder host instead of the real server, surfacing as a generic "can't reach server" error.
+ * Defaults to plain HTTP, matching network_security_config.xml's cleartext allowance for the
+ * typical self-hosted LAN/Docker deployment.
+ */
+private fun withDefaultScheme(rawServerUrl: String): String =
+    if (rawServerUrl.contains("://")) rawServerUrl else "http://$rawServerUrl"

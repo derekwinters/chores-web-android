@@ -1,12 +1,16 @@
 package com.derekwinters.chores.ui.users
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.derekwinters.chores.data.model.LogEntry
 import com.derekwinters.chores.data.model.PersonStats
+import com.derekwinters.chores.data.model.Redemption
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.common.formatDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,5 +72,78 @@ class UserDetailContentTest {
         composeTestRule.onNodeWithText("Confirm").performClick()
 
         assert(redeemed == 5)
+    }
+
+    @Test
+    fun userDetailContent_activityAndRedemptions_renderAsCardsWithSeparateFields() {
+        val activityEntry = LogEntry(
+            id = 1,
+            choreId = 4,
+            choreName = "Dishes",
+            person = "alice",
+            action = "completed",
+            timestamp = "2026-07-02T22:40:54.326377Z",
+            reassignedTo = null,
+            assignee = null,
+            fieldName = null,
+            oldValue = null,
+            newValue = null
+        )
+        val redemption = Redemption(id = 1, amount = 10, redeemedBy = "alice", timestamp = "2026-07-02T22:40:54.326377Z")
+        val dataWithHistory = data.copy(activity = listOf(activityEntry), redemptions = listOf(redemption))
+
+        composeTestRule.setContent {
+            UserDetailContent(
+                uiState = UiState.Success(dataWithHistory),
+                redeemState = UiState.Idle,
+                isAdmin = false,
+                onValidateAmount = { null },
+                onRedeem = {},
+                onDismissRedeemResult = {},
+                onHistoryClick = {}
+            )
+        }
+
+        // Chore Activity row: chore name -> capitalized action -> date-only formatted timestamp.
+        composeTestRule.onNodeWithText("Dishes").assertExists()
+        composeTestRule.onNodeWithText("Completed").assertExists()
+
+        // Redemption row: amount -> redeemedBy -> date-only formatted timestamp.
+        composeTestRule.onNodeWithText("10 pts").assertExists()
+        composeTestRule.onNodeWithText("by alice").assertExists()
+
+        composeTestRule.onAllNodesWithText(formatDate("2026-07-02T22:40:54.326377Z"))[0].assertExists()
+    }
+
+    @Test
+    fun userDetailContent_malformedTimestamp_fallsBackToRawStringInActivityRow() {
+        val activityEntry = LogEntry(
+            id = 1,
+            choreId = 4,
+            choreName = "Dishes",
+            person = "alice",
+            action = "completed",
+            timestamp = "not-a-timestamp",
+            reassignedTo = null,
+            assignee = null,
+            fieldName = null,
+            oldValue = null,
+            newValue = null
+        )
+        val dataWithHistory = data.copy(activity = listOf(activityEntry))
+
+        composeTestRule.setContent {
+            UserDetailContent(
+                uiState = UiState.Success(dataWithHistory),
+                redeemState = UiState.Idle,
+                isAdmin = false,
+                onValidateAmount = { null },
+                onRedeem = {},
+                onDismissRedeemResult = {},
+                onHistoryClick = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("not-a-timestamp").assertExists()
     }
 }

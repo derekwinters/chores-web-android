@@ -1,6 +1,7 @@
 package com.derekwinters.chores.ui.dashboard
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -58,8 +59,40 @@ class DashboardContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Due Now: 2").performClick()
+        composeTestRule.onNodeWithTag("dueNowButton").performClick()
 
         assert(navigated == ("alice" to null))
+    }
+
+    @Test
+    fun dashboardContent_progressRow_showsLargeBoldValueAndGoalCaption() {
+        composeTestRule.setContent {
+            DashboardContent(
+                uiState = UiState.Success(listOf(card)),
+                navActions = DashboardNavActions()
+            )
+        }
+
+        composeTestRule.onNodeWithText("Last 7 Days").assertExists()
+        composeTestRule.onNodeWithText("10").assertExists()
+        composeTestRule.onNodeWithText("Goal: 12 pts").assertExists()
+        composeTestRule.onNodeWithText("Last 30 Days").assertExists()
+        composeTestRule.onNodeWithText("40").assertExists()
+        composeTestRule.onNodeWithText("Goal: 50 pts").assertExists()
+    }
+
+    @Test
+    fun dashboardContent_dueColumns_showLabelsAndCounts() {
+        composeTestRule.setContent {
+            DashboardContent(
+                uiState = UiState.Success(listOf(card)),
+                navActions = DashboardNavActions()
+            )
+        }
+
+        composeTestRule.onNodeWithText("Due Now").assertExists()
+        composeTestRule.onNodeWithText("Due Soon").assertExists()
+        composeTestRule.onNodeWithTag("dueNowButton").assertExists()
+        composeTestRule.onNodeWithTag("dueSoonButton").assertExists()
     }
 }
