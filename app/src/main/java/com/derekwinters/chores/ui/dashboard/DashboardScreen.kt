@@ -186,7 +186,8 @@ private fun ProgressRow(headerLabel: String, value: Int, goal: Int, progress: Fl
         LinearProgressIndicator(
             progress = progress,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-            color = trendColor(trend)
+            color = trendColor(trend),
+            trackColor = Color.Transparent
         )
         Text(
             text = stringResource(R.string.dashboard_goal_format, goal),
