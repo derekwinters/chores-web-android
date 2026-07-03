@@ -29,6 +29,9 @@ class ThemeAdminViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<List<ThemeOption>>>(UiState.Loading)
     val uiState: StateFlow<UiState<List<ThemeOption>>> = _uiState.asStateFlow()
 
+    private val _defaultThemeId = MutableStateFlow<String?>(null)
+    val defaultThemeId: StateFlow<String?> = _defaultThemeId.asStateFlow()
+
     private val _actionState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val actionState: StateFlow<UiState<Unit>> = _actionState.asStateFlow()
 
@@ -42,6 +45,10 @@ class ThemeAdminViewModel @Inject constructor(
             themeRepository.getThemes()
                 .onSuccess { themes -> _uiState.value = UiState.Success(themes) }
                 .onFailure { error -> _uiState.value = UiState.Error(errorMessage(error)) }
+
+            themeRepository.getDefaultTheme()
+                .onSuccess { theme -> _defaultThemeId.value = theme.id }
+                .onFailure { _defaultThemeId.value = null }
         }
     }
 
