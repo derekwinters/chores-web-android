@@ -65,6 +65,8 @@ fun PointsLogContent(
     var editingEntry by remember { mutableStateOf<PointsLogEntry?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
+        Text("Points Log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+
         Box(modifier = Modifier.weight(1f).fillMaxSize()) {
             when (uiState) {
                 is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
