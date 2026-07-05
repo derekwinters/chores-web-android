@@ -23,7 +23,16 @@ data class LogFilters(
     val action: String? = null,
     val start: String? = null,
     val end: String? = null
-)
+) {
+    /**
+     * Issue #68: drives the "Clear filters" action's visibility, same `isActive` convention as
+     * Chores' [com.derekwinters.chores.ui.chores.ChoreFilters.isActive] -- true whenever any
+     * filter (including a deep-linked person/chore) is set, so the action only appears when
+     * there's actually something to clear.
+     */
+    val isActive: Boolean
+        get() = person != null || chore != null || action != null || start != null || end != null
+}
 
 /**
  * Issue #19: one page of results plus paging info, for the "N results" UI. The backend's

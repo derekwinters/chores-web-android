@@ -25,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.AuthLogEntry
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDateTime
+import com.derekwinters.chores.ui.common.humanizeActionLabel
 
 /**
  * Issue #21: admin-only audit log for auth-related events, separate from the chore Activity Log.
@@ -142,17 +143,4 @@ private fun AuthLogRow(entry: AuthLogEntry) {
             entry.changedBy?.let { Text("Changed by: $it", style = MaterialTheme.typography.bodySmall) }
         }
     }
-}
-
-/**
- * Issue #91: Map raw auth action values to humanized display labels.
- * Mirrors the same approach used by the Activity Log's humanizeActionLabel.
- */
-private fun humanizeActionLabel(action: String): String = when (action) {
-    "login_succeeded" -> "Login Succeeded"
-    "login_failed" -> "Login Failed"
-    "password_changed" -> "Password Changed"
-    "password_reset" -> "Password Reset"
-    "user_created" -> "User Created"
-    else -> action.split("_").joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
 }
