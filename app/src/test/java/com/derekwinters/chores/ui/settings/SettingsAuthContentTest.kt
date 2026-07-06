@@ -73,4 +73,21 @@ class SettingsAuthContentTest {
 
         composeTestRule.onNodeWithText("Save").assertExists()
     }
+
+    /**
+     * Issue #116: Save errors render as a bordered/tinted [SettingsBanner], not plain text.
+     */
+    @Test
+    fun settingsAuthContent_saveError_rendersStyledBanner() {
+        composeTestRule.setContent {
+            SettingsAuthContent(
+                uiState = UiState.Success(ConfigDto().toDomain()),
+                saveState = UiState.Error("Save failed"),
+                onSave = {},
+                onNavigateToAuthLog = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("ErrorBanner").assertExists()
+    }
 }

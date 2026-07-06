@@ -86,7 +86,7 @@ fun SettingsGeneralContent(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp)
                 ) {
-                    Divider(modifier = Modifier.padding(bottom = 16.dp))
+                    Divider(modifier = Modifier.padding(bottom = 16.dp).testTag("AppTitleSectionDivider"))
 
                     // App Title Section
                     Text("App Title", style = MaterialTheme.typography.titleMedium)
@@ -101,10 +101,14 @@ fun SettingsGeneralContent(
                     )
 
                     // Timezone Section
+                    Divider(
+                        modifier = Modifier
+                            .padding(top = 16.dp, bottom = 16.dp)
+                            .testTag("TimezoneSectionDivider")
+                    )
                     Text(
                         "Timezone",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 24.dp)
+                        style = MaterialTheme.typography.titleMedium
                     )
 
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {

@@ -1,6 +1,7 @@
 package com.derekwinters.chores.ui.settings
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -81,5 +82,23 @@ class SettingsAboutContentTest {
         }
 
         composeTestRule.onNodeWithText("Save").assertExists()
+    }
+
+    /**
+     * Issue #116: Save errors render as a bordered/tinted [SettingsBanner], not plain text.
+     */
+    @Test
+    fun settingsAboutContent_saveError_rendersStyledBanner() {
+        composeTestRule.setContent {
+            SettingsAboutContent(
+                uiState = UiState.Success(ConfigDto().toDomain()),
+                saveState = UiState.Error("Save failed"),
+                updateStatus = null,
+                onSave = {},
+                onCheckForUpdates = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("ErrorBanner").assertExists()
     }
 }

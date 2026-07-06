@@ -1,6 +1,7 @@
 package com.derekwinters.chores.ui.settings
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -110,6 +111,45 @@ class DataSettingsContentTest {
         composeTestRule.onNodeWithText("Data Management").assertExists()
     }
 
+    /**
+     * Issue #114: Export & Import, Log Retention, and Data Management each carry their own
+     * descriptive copy, not just a bare section heading.
+     */
+    @Test
+    fun dataSettingsContent_eachSection_hasDescriptionText() {
+        composeTestRule.setContent {
+            DataSettingsContent(
+                logRetentionDays = 90,
+                logRetentionInput = "90",
+                logRetentionState = UiState.Idle,
+                importPreview = null,
+                importState = UiState.Idle,
+                selectedImportFilename = null,
+                exportFilename = null,
+                exportState = UiState.Idle,
+                onExportClick = {},
+                onImportClick = {},
+                onLogRetentionChange = {},
+                onSaveLogRetention = {},
+                onClearLogRetentionState = {},
+                onConfirmImport = {},
+                onCancelImport = {},
+                onDismissImportResult = {},
+                onNavigateToPointsLog = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText(
+            "Back up your data by exporting to a file, or restore from a previous backup by importing."
+        ).assertExists()
+        composeTestRule.onNodeWithText(
+            "Control how long activity logs are kept. Older entries will be automatically deleted."
+        ).assertExists()
+        composeTestRule.onNodeWithText(
+            "Access detailed information about your activity logs."
+        ).assertExists()
+    }
+
     @Test
     fun dataSettingsContent_logRetentionSave_buttonExists() {
         composeTestRule.setContent {
@@ -216,6 +256,102 @@ class DataSettingsContentTest {
         }
 
         composeTestRule.onNodeWithText("Imported 2 people, 5 chores, 1 settings", substring = true).assertExists()
+    }
+
+    /**
+     * Issue #117: Export and Import controls each carry their own description text, not just
+     * the section-level description.
+     */
+    @Test
+    fun dataSettingsContent_exportImportButtons_haveDescriptionText() {
+        composeTestRule.setContent {
+            DataSettingsContent(
+                logRetentionDays = 90,
+                logRetentionInput = "90",
+                logRetentionState = UiState.Idle,
+                importPreview = null,
+                importState = UiState.Idle,
+                selectedImportFilename = null,
+                exportFilename = null,
+                exportState = UiState.Idle,
+                onExportClick = {},
+                onImportClick = {},
+                onLogRetentionChange = {},
+                onSaveLogRetention = {},
+                onClearLogRetentionState = {},
+                onConfirmImport = {},
+                onCancelImport = {},
+                onDismissImportResult = {},
+                onNavigateToPointsLog = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText(
+            "Download your data as a JSON file for backup or migration purposes"
+        ).assertExists()
+        composeTestRule.onNodeWithText(
+            "Upload a previously exported JSON file to restore or migrate your data"
+        ).assertExists()
+    }
+
+    /**
+     * Issue #117: Export results render as a bordered/tinted [SettingsBanner], not plain text.
+     */
+    @Test
+    fun dataSettingsContent_exportSuccess_rendersStyledBanner() {
+        composeTestRule.setContent {
+            DataSettingsContent(
+                logRetentionDays = 90,
+                logRetentionInput = "90",
+                logRetentionState = UiState.Idle,
+                importPreview = null,
+                importState = UiState.Idle,
+                selectedImportFilename = null,
+                exportFilename = "chores-backup.json",
+                exportState = UiState.Success("{}"),
+                onExportClick = {},
+                onImportClick = {},
+                onLogRetentionChange = {},
+                onSaveLogRetention = {},
+                onClearLogRetentionState = {},
+                onConfirmImport = {},
+                onCancelImport = {},
+                onDismissImportResult = {},
+                onNavigateToPointsLog = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("SuccessBanner").assertExists()
+    }
+
+    /**
+     * Issue #117: Import results render as a bordered/tinted [SettingsBanner], not plain text.
+     */
+    @Test
+    fun dataSettingsContent_importResult_rendersStyledBanner() {
+        composeTestRule.setContent {
+            DataSettingsContent(
+                logRetentionDays = 90,
+                logRetentionInput = "90",
+                logRetentionState = UiState.Idle,
+                importPreview = null,
+                importState = UiState.Success(com.derekwinters.chores.data.repository.ImportSummary(peopleCount = 2, choresCount = 5, settingsCount = 1)),
+                selectedImportFilename = null,
+                exportFilename = null,
+                exportState = UiState.Idle,
+                onExportClick = {},
+                onImportClick = {},
+                onLogRetentionChange = {},
+                onSaveLogRetention = {},
+                onClearLogRetentionState = {},
+                onConfirmImport = {},
+                onCancelImport = {},
+                onDismissImportResult = {},
+                onNavigateToPointsLog = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("SuccessBanner").assertExists()
     }
 
     @Test

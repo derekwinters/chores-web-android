@@ -1,5 +1,6 @@
 package com.derekwinters.chores.ui.settings
 
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -58,6 +59,59 @@ class SettingsGeneralContentTest {
 
         // Verify the timezone field is visible and labeled
         composeTestRule.onNodeWithTag("TimezoneField").assertExists()
+    }
+
+    /**
+     * Issue #102: Each settings section's divider appears above its heading and content, not
+     * after. The General screen has two subsections (App Title, Timezone) — verify the Timezone
+     * subsection has its own divider separating it from the App Title subsection above it.
+     */
+    @Test
+    fun settingsGeneralContent_timezoneSection_hasDividerAboveHeading() {
+        composeTestRule.setContent {
+            SettingsGeneralContent(
+                uiState = UiState.Success(ConfigDto(title = "Chores", timezone = "UTC").toDomain()),
+                saveState = UiState.Idle,
+                onSave = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("AppTitleSectionDivider").assertExists()
+        composeTestRule.onNodeWithTag("TimezoneSectionDivider").assertExists()
+    }
+
+    /**
+     * Issue #106: Timezone is selected via a picker showing UTC-offset labels, not the raw
+     * zone id — verify the field displays an offset label (e.g. "New_York (UTC-5:00)") rather
+     * than the bare "America/New_York" zone id.
+     */
+    @Test
+    fun settingsGeneralContent_timezoneField_showsUtcOffsetLabel_notRawZoneId() {
+        composeTestRule.setContent {
+            SettingsGeneralContent(
+                uiState = UiState.Success(ConfigDto(title = "Chores", timezone = "America/New_York").toDomain()),
+                saveState = UiState.Idle,
+                onSave = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("TimezoneField").assertTextContains("UTC", substring = true)
+    }
+
+    /**
+     * Issue #116: Save errors render as a bordered/tinted [SettingsBanner], not plain text.
+     */
+    @Test
+    fun settingsGeneralContent_saveError_rendersStyledBanner() {
+        composeTestRule.setContent {
+            SettingsGeneralContent(
+                uiState = UiState.Success(ConfigDto(title = "Chores").toDomain()),
+                saveState = UiState.Error("Save failed"),
+                onSave = {}
+            )
+        }
+
+        composeTestRule.onNodeWithTag("ErrorBanner").assertExists()
     }
 
     @Test
