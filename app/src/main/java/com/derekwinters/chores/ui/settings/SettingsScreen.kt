@@ -191,17 +191,26 @@ fun SettingsContent(
 }
 
 /**
- * Issue #88: Settings menu showing 6 sections (General, Auth, Chores, Theme, Data, About) as
+ * Issue #88: Settings menu showing sections (General, Auth, Chores, Theme, Data, About) as
  * independently-routed pages, matching chores-web's SettingsLayout.jsx sub-nav structure.
+ *
+ * Issue #167: [ChoresDestination.Settings][com.derekwinters.chores.ui.ChoresDestination.Settings]
+ * lost its top-level `adminOnly` gate (Settings is now a fixed bottom-nav tab, visible to
+ * everyone, since it must remain reachable for the folded-in Preferences entry below) — the
+ * admin-only rows that mutate household config (General/Auth/Chores/Theme/Data) are gated here at
+ * the row level via [isAdmin] instead. Preferences (the personal theme picker, previously only
+ * reachable via the avatar dropdown) and About stay visible to all users.
  */
 @Composable
 fun SettingsMenuContent(
+    isAdmin: Boolean,
     onNavigateToGeneral: () -> Unit,
     onNavigateToAuth: () -> Unit,
     onNavigateToChores: () -> Unit,
     onNavigateToTheme: () -> Unit,
     onNavigateToData: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onNavigateToPreferences: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -211,11 +220,14 @@ fun SettingsMenuContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SettingsMenuItem(label = "General", onClick = onNavigateToGeneral)
-        SettingsMenuItem(label = "Auth", onClick = onNavigateToAuth)
-        SettingsMenuItem(label = "Chores", onClick = onNavigateToChores)
-        SettingsMenuItem(label = "Theme", onClick = onNavigateToTheme)
-        SettingsMenuItem(label = "Data", onClick = onNavigateToData)
+        SettingsMenuItem(label = "Preferences", onClick = onNavigateToPreferences)
+        if (isAdmin) {
+            SettingsMenuItem(label = "General", onClick = onNavigateToGeneral)
+            SettingsMenuItem(label = "Auth", onClick = onNavigateToAuth)
+            SettingsMenuItem(label = "Chores", onClick = onNavigateToChores)
+            SettingsMenuItem(label = "Theme", onClick = onNavigateToTheme)
+            SettingsMenuItem(label = "Data", onClick = onNavigateToData)
+        }
         SettingsMenuItem(label = "About", onClick = onNavigateToAbout)
     }
 }

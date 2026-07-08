@@ -1,24 +1,25 @@
 <resources>
     <string name="app_name">Chores</string>
 
-    <!-- Navigation shell (issue #10). Issue #60: labels "Board"/"Log" match web's PAGES copy
-         (App.jsx lines 30-35) rather than "Dashboard"/"Activity Log". -->
-    <string name="nav_dashboard">Board</string>
+    <!-- Navigation shell (issue #10). Issue #60: "Log" matches web's PAGES copy (App.jsx lines
+         30-35) rather than "Activity Log". Issue #167: the Dashboard/Board destination's bottom
+         nav label is "Home" (route unchanged) — an intentional divergence from web's "Board"
+         copy, since a bottom nav bar's home tab conventionally reads "Home". -->
+    <string name="nav_dashboard">Home</string>
     <string name="nav_chores">Chores</string>
     <string name="nav_log">Log</string>
     <string name="nav_users">Users</string>
     <!-- Issue #98: page title reads "Manage Users" (web parity), distinct from the shorter
-         "Users" nav-drawer label above. -->
+         "Users" nav label above. -->
     <string name="user_management_screen_title">Manage Users</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_preferences">Preferences</string>
-    <string name="open_navigation_menu">Open navigation menu</string>
-    <!-- Issue #145: the hamburger icon toggles an expandable panel; the content description
-         reflects whether tapping it will open or close that panel. -->
-    <string name="close_navigation_menu">Close navigation menu</string>
     <string name="user_menu">User menu</string>
     <string name="logout">Logout</string>
     <string name="coming_soon">Coming soon</string>
+    <!-- Issue #167: the Chores bottom-nav tab's "due now" badge, announced to accessibility
+         services since the numeral alone isn't otherwise labeled. -->
+    <string name="chores_due_now_badge_description">%1$d chores due now</string>
 
     <!-- Auth parity: first-run setup, forced password reset, DB-readiness gate (issue #11) -->
     <string name="continue_button">Continue</string>

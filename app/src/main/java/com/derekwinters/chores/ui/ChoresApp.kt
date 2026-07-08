@@ -1,45 +1,39 @@
 package com.derekwinters.chores.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -47,7 +41,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +48,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -142,7 +137,14 @@ private val sharedAxisPopExit: AnimatedContentTransitionScope<NavBackStackEntry>
  * Dashboard, so [Dashboard] — not [Chores] — is the app's start destination now; the chore list
  * screen from issue #5 becomes the "Chores" destination unchanged.
  *
- * [adminOnly] mirrors web's `App.jsx` `adminOnly: true` nav-item gating (Users, Settings).
+ * [adminOnly] mirrors web's `App.jsx` `adminOnly: true` nav-item gating (issue #167: only [Users]
+ * still carries it at the tab level — [Settings] dropped its top-level gate since it must remain
+ * reachable by non-admins for the folded-in Preferences entry; admin-only Settings content is
+ * gated per-row inside `SettingsMenuContent` instead).
+ *
+ * Issue #167 (ADR-0004): [Preferences] is nested under the Settings sub-nav graph
+ * (`"settings/preferences"`) rather than being its own top-level destination, reached only via a
+ * `SettingsMenuContent` row now that the avatar dropdown no longer carries it.
  */
 sealed class ChoresDestination(
     val route: String,
@@ -150,12 +152,12 @@ sealed class ChoresDestination(
     val icon: ImageVector,
     val adminOnly: Boolean = false
 ) {
-    data object Dashboard : ChoresDestination("dashboard", R.string.nav_dashboard, Icons.Filled.Dashboard)
+    data object Dashboard : ChoresDestination("dashboard", R.string.nav_dashboard, Icons.Filled.Home)
     data object Chores : ChoresDestination("chores", R.string.nav_chores, Icons.Filled.CheckCircle)
     data object ActivityLog : ChoresDestination("log", R.string.nav_log, Icons.Filled.History)
     data object Users : ChoresDestination("users", R.string.nav_users, Icons.Filled.People, adminOnly = true)
-    data object Settings : ChoresDestination("settings", R.string.nav_settings, Icons.Filled.Settings, adminOnly = true)
-    data object Preferences : ChoresDestination("preferences", R.string.nav_preferences, Icons.Filled.Palette)
+    data object Settings : ChoresDestination("settings", R.string.nav_settings, Icons.Filled.Settings)
+    data object Preferences : ChoresDestination("settings/preferences", R.string.nav_preferences, Icons.Filled.Palette)
 }
 
 /** Issue #12: builds the Chores route + query args for a Dashboard Due Now/Due Soon deep link. */
@@ -188,21 +190,23 @@ private fun userDetailRoute(personId: Int, username: String): String =
     "users/$personId?username=${android.net.Uri.encode(username)}"
 
 /**
- * Issue #59/#60: matches web's `PAGES` list (`App.jsx` lines 30-35) — order Board → Chores →
- * Users(admin) → Log, with Settings and Preferences deliberately excluded from primary nav (they
- * live only in the avatar dropdown, see [ChoresAuthenticatedScaffold]'s `TopAppBar` actions).
+ * Issue #167 (ADR-0004): the five fixed bottom-nav items, in web's `PAGES`-derived order (Board/
+ * Home → Chores → Users(admin) → Log) plus Settings, which — unlike issues #59/#60's
+ * avatar-dropdown-only placement — is now a primary tab too (see [ChoresDestination] doc).
  */
-private val drawerDestinations = listOf(
+private val bottomNavDestinations = listOf(
     ChoresDestination.Dashboard,
     ChoresDestination.Chores,
     ChoresDestination.Users,
-    ChoresDestination.ActivityLog
+    ChoresDestination.ActivityLog,
+    ChoresDestination.Settings
 )
 
 /**
- * Root app composable: Login screen gates a drawer-nav Scaffold (issue #10 replaces the 2-item
- * bottom nav bar with a sidebar-style drawer, matching chores-web's sidebar, now that there are
- * 7 destinations). [CurrentUserViewModel] drives admin-only item visibility.
+ * Root app composable: Login screen gates a bottom-nav Scaffold (issue #167/ADR-0004 returns to a
+ * Material3 `NavigationBar` now that the destination count is a fixed five — see the ADR for why
+ * this isn't repeating issue #10's discarded bottom-bar approach). [CurrentUserViewModel] drives
+ * admin-only item visibility.
  *
  * Thin Hilt-wired wrapper around [ChoresAppContent]; see ChoresAppContentTest for gating/nav
  * behavior coverage that doesn't require a Hilt test component.
@@ -223,6 +227,9 @@ fun ChoresApp(
  *   [AuthGateScreen] but is overridable in tests to avoid needing a Hilt test component.
  * @param currentUserProvider supplies the signed-in user's admin status for nav gating;
  *   overridable in tests. Defaults to the real (Hilt-wired) [CurrentUserViewModel].
+ * @param dueNowCountProvider issue #167: supplies the signed-in user's own "due now" chore count
+ *   for the Chores bottom-nav tab's badge, given their username. Defaults to the real (Hilt-wired)
+ *   [NavBadgeViewModel] combined with [dueNowCountForUser]; overridable in tests.
  */
 @Composable
 fun ChoresAppContent(
@@ -278,6 +285,11 @@ fun ChoresAppContent(
         val viewModel: AppTitleViewModel = hiltViewModel()
         val title by viewModel.appTitle.collectAsState()
         title
+    },
+    dueNowCountProvider: @Composable (username: String?) -> Int = { username ->
+        val viewModel: NavBadgeViewModel = hiltViewModel()
+        val chores by viewModel.chores.collectAsState()
+        dueNowCountForUser(chores, username)
     }
 ) {
     // Issue #62: ChoresTheme now wraps the unauthenticated screen graph (AuthGateScreen's
@@ -301,12 +313,14 @@ fun ChoresAppContent(
             val isAdmin = (currentUserState as? UiState.Success)?.data?.isAdmin == true
             val username = (currentUserState as? UiState.Success)?.data?.username
             val appTitle = currentTitleProvider()
+            val dueNowCount = dueNowCountProvider(username)
 
             ChoresAuthenticatedScaffold(
                 isAdmin = isAdmin,
                 username = username,
                 onLogout = onLogout,
                 appTitle = appTitle,
+                dueNowCount = dueNowCount,
                 dashboardContent = dashboardContent,
                 choresContent = choresContent,
                 choreFormContent = choreFormContent,
@@ -333,6 +347,8 @@ private fun ChoresAuthenticatedScaffold(
     onLogout: () -> Unit,
     /** Issue #58: household/app title branding; null falls back to `R.string.app_name`. */
     appTitle: String?,
+    /** Issue #167: the signed-in user's own "due now" chore count, shown as a badge on the Chores tab. */
+    dueNowCount: Int,
     modifier: Modifier = Modifier,
     dashboardContent: @Composable (DashboardNavActions) -> Unit,
     choresContent: @Composable (assignee: String?, dueWithin: String?, navActions: ChoresNavActions) -> Unit,
@@ -348,81 +364,30 @@ private fun ChoresAuthenticatedScaffold(
     themeAdminContent: @Composable () -> Unit
 ) {
     val navController = rememberNavController()
-    // Issue #145: the nav panel expands beneath the TopAppBar (rather than sliding in as a
-    // ModalNavigationDrawer overlay) to match chores-web's mobile layout. Survives rotation via
-    // rememberSaveable. Issue #146: back-press with the panel open closes it instead of popping
-    // the nav stack (see BackHandler below).
-    var navPanelExpanded by rememberSaveable { mutableStateOf(false) }
     var userMenuExpanded by remember { mutableStateOf(false) }
-
-    BackHandler(enabled = navPanelExpanded) {
-        navPanelExpanded = false
-    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val visibleDestinations = drawerDestinations.filter { !it.adminOnly || isAdmin }
+    // Issue #167: Settings.adminOnly is now false, so it's always included; Users stays gated.
+    val visibleDestinations = bottomNavDestinations.filter { !it.adminOnly || isAdmin }
     // Chores' actual registered route carries query-arg placeholders ("chores?assignee=...");
-    // matching by prefix keeps drawer highlighting/title working whether or not args are present.
+    // matching by prefix keeps bottom-nav highlighting/title working whether or not args are
+    // present, and (issue #167) also keeps the Settings tab highlighted while drilled into any
+    // "settings/*" sub-route, including the folded-in "settings/preferences" screen.
     fun isCurrent(dest: ChoresDestination) =
         currentDestination?.hierarchy?.any { it.route?.startsWith(dest.route) == true } == true
-    // Issue #59: Settings/Preferences label lookup uses every destination (not just the drawer's
-    // visibleDestinations, which they were removed from) so the TopAppBar subtitle still reads
-    // "Settings"/"Preferences" rather than falling back to the app title when navigated there via
-    // the avatar dropdown.
-    val currentLabel = if (isCurrent(ChoresDestination.Users)) {
-        // Issue #98: the page title reads "Manage Users" (web parity) while the drawer item
-        // above keeps the shorter "Users" label — these are intentionally decoupled.
-        stringResource(R.string.user_management_screen_title)
-    } else {
-        (visibleDestinations + ChoresDestination.Settings + ChoresDestination.Preferences)
-            .firstOrNull(::isCurrent)
+    val currentLabel = when {
+        // Issue #98: the page title reads "Manage Users" (web parity) while the bottom-nav item
+        // keeps the shorter "Users" label — these are intentionally decoupled.
+        isCurrent(ChoresDestination.Users) -> stringResource(R.string.user_management_screen_title)
+        // Issue #167: Preferences now lives under Settings ("settings/preferences"), which also
+        // satisfies isCurrent(Settings) since it starts with "settings" -- check the more specific
+        // Preferences match first so the subtitle reads "Preferences" rather than "Settings" there.
+        isCurrent(ChoresDestination.Preferences) -> stringResource(R.string.nav_preferences)
+        else -> visibleDestinations.firstOrNull(::isCurrent)
             ?.labelRes
             ?.let { stringResource(it) }
             ?: stringResource(R.string.app_name)
-    }
-
-    // Issue #145: renders the primary nav items in the panel that expands beneath the TopAppBar.
-    // Extracted so it can be shared without needing a ModalNavigationDrawer/ModalDrawerSheet host.
-    val navPanelContent: @Composable () -> Unit = {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            visibleDestinations.forEach { destination ->
-                val selected = isCurrent(destination)
-                NavigationDrawerItem(
-                    label = { Text(stringResource(destination.labelRes)) },
-                    icon = { Icon(destination.icon, contentDescription = null) },
-                    selected = selected,
-                    onClick = {
-                        navPanelExpanded = false
-                        navController.navigate(destination.route) {
-                            popUpTo(ChoresDestination.Dashboard.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    // Issue #61: web's `.nav-active` (App.css lines 115-127) keeps the same
-                    // background as an unselected item (`--surface`) — only the text/icon
-                    // color brightens (`--text-muted` -> `--text`). Material3's default
-                    // selected-item colors draw a secondaryContainer pill, a much stronger
-                    // highlight than web's; this overrides it to a transparent container with
-                    // only a text/icon color change.
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        unselectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        selectedIconColor = MaterialTheme.colorScheme.onSurface,
-                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    // Issue #60 test fix: disambiguates drawer items from the TopAppBar
-                    // subtitle, which can show the same label text (e.g. both "Board" when
-                    // Dashboard is current) since drawer labels now match web's PAGES copy.
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                        .testTag("navItem_${destination.route}")
-                )
-            }
-        }
     }
 
     Scaffold(
@@ -444,293 +409,295 @@ private fun ChoresAuthenticatedScaffold(
                         Text(currentLabel, style = MaterialTheme.typography.bodySmall)
                     }
                 },
-                navigationIcon = {
-                    // Issue #145: the same hamburger icon toggles the panel open and closed;
-                    // only the content description changes to reflect the current state.
-                    IconButton(onClick = { navPanelExpanded = !navPanelExpanded }) {
-                        Icon(
-                            Icons.Filled.Menu,
-                            contentDescription = stringResource(
-                                if (navPanelExpanded) R.string.close_navigation_menu else R.string.open_navigation_menu
+                actions = {
+                    // Issue #59: restores web's user identity treatment (`UserAvatarMenu.jsx`
+                    // lines 45-51) — a colored circle with the user's initial plus their name —
+                    // in place of the generic MoreVert icon. Issue #167: the dropdown itself now
+                    // only offers identity + logout, since Preferences/Settings moved to the
+                    // bottom nav.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .testTag("userMenuTrigger")
+                            .clickable { userMenuExpanded = true }
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.tertiary)
+                        ) {
+                            Text(
+                                text = username?.take(1)?.uppercase().orEmpty(),
+                                color = MaterialTheme.colorScheme.onTertiary,
+                                fontWeight = FontWeight.Bold
                             )
+                        }
+                        if (username != null) {
+                            Text(
+                                text = username,
+                                modifier = Modifier.padding(start = 8.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    DropdownMenu(expanded = userMenuExpanded, onDismissRequest = { userMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.logout)) },
+                            leadingIcon = { Icon(Icons.Filled.Logout, contentDescription = null) },
+                            onClick = {
+                                userMenuExpanded = false
+                                onLogout()
+                            }
                         )
                     }
-                },
-                actions = {
-                        // Issue #59: restores web's user identity treatment (`UserAvatarMenu.jsx`
-                        // lines 45-51) — a colored circle with the user's initial plus their name —
-                        // in place of the generic MoreVert icon.
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .padding(end = 12.dp)
-                                .testTag("userMenuTrigger")
-                                .clickable { userMenuExpanded = true }
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.tertiary)
-                            ) {
-                                Text(
-                                    text = username?.take(1)?.uppercase().orEmpty(),
-                                    color = MaterialTheme.colorScheme.onTertiary,
-                                    fontWeight = FontWeight.Bold
-                                )
+                }
+            )
+        },
+        bottomBar = {
+            // Issue #167 (ADR-0004): Material3 NavigationBar replaces the hamburger + expand-
+            // under-the-top-bar panel (issue #145) as primary navigation.
+            NavigationBar {
+                visibleDestinations.forEach { destination ->
+                    val selected = isCurrent(destination)
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            navController.navigate(destination.route) {
+                                popUpTo(ChoresDestination.Dashboard.route) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            if (username != null) {
-                                Text(
-                                    text = username,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                        DropdownMenu(expanded = userMenuExpanded, onDismissRequest = { userMenuExpanded = false }) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.nav_preferences)) },
-                                leadingIcon = { Icon(Icons.Filled.Palette, contentDescription = null) },
-                                onClick = {
-                                    userMenuExpanded = false
-                                    // Issue #146: avatar-dropdown navigations now pop up to
-                                    // Dashboard like drawer navigations, so "back" from here
-                                    // eventually lands on the homepage instead of walking
-                                    // arbitrary history.
-                                    navController.navigate(ChoresDestination.Preferences.route) {
-                                        popUpTo(ChoresDestination.Dashboard.route) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            )
-                            if (isAdmin) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.nav_settings)) },
-                                    leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                                    onClick = {
-                                        userMenuExpanded = false
-                                        navController.navigate(ChoresDestination.Settings.route) {
-                                            popUpTo(ChoresDestination.Dashboard.route) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
+                        },
+                        icon = {
+                            if (destination == ChoresDestination.Chores && dueNowCount > 0) {
+                                // stringResource is a @Composable call, so it must be resolved here
+                                // (composable scope) rather than inside the Modifier.semantics{}
+                                // lambda below, which is a plain (non-composable) lambda.
+                                val badgeDescription = stringResource(R.string.chores_due_now_badge_description, dueNowCount)
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            modifier = Modifier
+                                                .testTag("choresDueNowBadge")
+                                                .semantics { contentDescription = badgeDescription }
+                                        ) {
+                                            Text(dueNowCount.toString())
                                         }
                                     }
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.logout)) },
-                                leadingIcon = { Icon(Icons.Filled.Logout, contentDescription = null) },
-                                onClick = {
-                                    userMenuExpanded = false
-                                    onLogout()
+                                ) {
+                                    Icon(destination.icon, contentDescription = null)
                                 }
-                            )
+                            } else {
+                                Icon(destination.icon, contentDescription = null)
+                            }
+                        },
+                        label = { Text(stringResource(destination.labelRes)) },
+                        modifier = Modifier.testTag("navItem_${destination.route}")
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = ChoresDestination.Dashboard.route,
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = fadeThroughEnter,
+            exitTransition = fadeThroughExit,
+            popEnterTransition = fadeThroughEnter,
+            popExitTransition = fadeThroughExit
+        ) {
+            composable(ChoresDestination.Dashboard.route) {
+                dashboardContent(
+                    DashboardNavActions(
+                        onNavigateToChores = { assignee, dueWithin ->
+                            navController.navigate(choresRouteWithArgs(assignee, dueWithin))
+                        },
+                        onNavigateToUserDetail = { personId, username ->
+                            navController.navigate(userDetailRoute(personId, username))
                         }
-                    }
+                    )
                 )
             }
-        ) { innerPadding ->
-            Column(modifier = Modifier.padding(innerPadding)) {
-                // Issue #145: expands beneath the TopAppBar instead of a ModalNavigationDrawer
-                // overlay, matching chores-web's mobile nav pattern.
-                AnimatedVisibility(
-                    visible = navPanelExpanded,
-                    enter = expandVertically(animationSpec = tween(250)),
-                    exit = shrinkVertically(animationSpec = tween(250))
-                ) {
-                    Surface(tonalElevation = 2.dp) {
-                        navPanelContent()
+            composable(
+                route = "${ChoresDestination.Chores.route}?assignee={assignee}&dueWithin={dueWithin}",
+                arguments = listOf(
+                    navArgument("assignee") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("dueWithin") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
-                }
-                NavHost(
-                    navController = navController,
-                    startDestination = ChoresDestination.Dashboard.route,
-                    enterTransition = fadeThroughEnter,
-                    exitTransition = fadeThroughExit,
-                    popEnterTransition = fadeThroughEnter,
-                    popExitTransition = fadeThroughExit
-                ) {
-                composable(ChoresDestination.Dashboard.route) {
-                    dashboardContent(
-                        DashboardNavActions(
-                            onNavigateToChores = { assignee, dueWithin ->
-                                navController.navigate(choresRouteWithArgs(assignee, dueWithin))
-                            },
-                            onNavigateToUserDetail = { personId, username ->
-                                navController.navigate(userDetailRoute(personId, username))
-                            }
-                        )
-                    )
-                }
-                composable(
-                    route = "${ChoresDestination.Chores.route}?assignee={assignee}&dueWithin={dueWithin}",
-                    arguments = listOf(
-                        navArgument("assignee") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
+                )
+            ) { backStackEntry ->
+                choresContent(
+                    backStackEntry.arguments?.getString("assignee"),
+                    backStackEntry.arguments?.getString("dueWithin"),
+                    ChoresNavActions(
+                        onNavigateToHistory = { choreName ->
+                            navController.navigate(logRouteWithArgs(chore = choreName, person = null))
                         },
-                        navArgument("dueWithin") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        }
+                        onNavigateToCreateChore = { navController.navigate("chores/new") },
+                        onNavigateToEditChore = { choreId -> navController.navigate("chores/$choreId/edit") }
                     )
-                ) { backStackEntry ->
-                    choresContent(
-                        backStackEntry.arguments?.getString("assignee"),
-                        backStackEntry.arguments?.getString("dueWithin"),
-                        ChoresNavActions(
-                            onNavigateToHistory = { choreName ->
-                                navController.navigate(logRouteWithArgs(chore = choreName, person = null))
-                            },
-                            onNavigateToCreateChore = { navController.navigate("chores/new") },
-                            onNavigateToEditChore = { choreId -> navController.navigate("chores/$choreId/edit") }
-                        )
-                    )
+                )
+            }
+            composable(
+                route = "chores/new",
+                enterTransition = sharedAxisEnter,
+                exitTransition = sharedAxisExit,
+                popEnterTransition = sharedAxisPopEnter,
+                popExitTransition = sharedAxisPopExit
+            ) {
+                choreFormContent { navController.popBackStack() }
+            }
+            composable(
+                route = "chores/{choreId}/edit",
+                arguments = listOf(navArgument("choreId") { type = NavType.IntType }),
+                enterTransition = sharedAxisEnter,
+                exitTransition = sharedAxisExit,
+                popEnterTransition = sharedAxisPopEnter,
+                popExitTransition = sharedAxisPopExit
+            ) {
+                choreFormContent { navController.popBackStack() }
+            }
+            composable(
+                route = "${ChoresDestination.ActivityLog.route}?chore={chore}&person={person}",
+                arguments = listOf(
+                    navArgument("chore") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("person") { type = NavType.StringType; nullable = true; defaultValue = null }
+                )
+            ) { logContent() }
+            composable(
+                route = "users/{personId}?username={username}",
+                arguments = listOf(
+                    navArgument("personId") { type = NavType.IntType },
+                    navArgument("username") { type = NavType.StringType; nullable = true; defaultValue = null }
+                ),
+                enterTransition = sharedAxisEnter,
+                exitTransition = sharedAxisExit,
+                popEnterTransition = sharedAxisPopEnter,
+                popExitTransition = sharedAxisPopExit
+            ) { backStackEntry ->
+                val username = backStackEntry.arguments?.getString("username")
+                userDetailContent {
+                    navController.navigate(logRouteWithArgs(chore = null, person = username))
                 }
+            }
+            composable(ChoresDestination.Users.route) {
+                usersContent { username -> navController.navigate(logRouteWithArgs(chore = null, person = username)) }
+            }
+            // Issue #146: navigation-compose 2.7.7's `navigation(...)` graph builder doesn't
+            // accept enter/exitTransition params (added in a later library version), so the
+            // shared-axis drill-in transition is set per-composable within this graph instead
+            // of once on the graph itself.
+            navigation(startDestination = "settings/menu", route = ChoresDestination.Settings.route) {
                 composable(
-                    route = "chores/new",
+                    route = "settings/menu",
                     enterTransition = sharedAxisEnter,
                     exitTransition = sharedAxisExit,
                     popEnterTransition = sharedAxisPopEnter,
                     popExitTransition = sharedAxisPopExit
                 ) {
-                    choreFormContent { navController.popBackStack() }
+                    SettingsMenuContent(
+                        isAdmin = isAdmin,
+                        onNavigateToGeneral = { navController.navigate("settings/general") },
+                        onNavigateToAuth = { navController.navigate("settings/auth") },
+                        onNavigateToChores = { navController.navigate("settings/chores") },
+                        onNavigateToTheme = { navController.navigate("settings/theme") },
+                        onNavigateToData = { navController.navigate("settings/data") },
+                        onNavigateToAbout = { navController.navigate("settings/about") },
+                        onNavigateToPreferences = { navController.navigate(ChoresDestination.Preferences.route) }
+                    )
                 }
                 composable(
-                    route = "chores/{choreId}/edit",
-                    arguments = listOf(navArgument("choreId") { type = NavType.IntType }),
+                    route = "settings/general",
                     enterTransition = sharedAxisEnter,
                     exitTransition = sharedAxisExit,
                     popEnterTransition = sharedAxisPopEnter,
                     popExitTransition = sharedAxisPopExit
                 ) {
-                    choreFormContent { navController.popBackStack() }
+                    SettingsGeneralScreen(navController = navController)
                 }
                 composable(
-                    route = "${ChoresDestination.ActivityLog.route}?chore={chore}&person={person}",
-                    arguments = listOf(
-                        navArgument("chore") { type = NavType.StringType; nullable = true; defaultValue = null },
-                        navArgument("person") { type = NavType.StringType; nullable = true; defaultValue = null }
-                    )
-                ) { logContent() }
-                composable(
-                    route = "users/{personId}?username={username}",
-                    arguments = listOf(
-                        navArgument("personId") { type = NavType.IntType },
-                        navArgument("username") { type = NavType.StringType; nullable = true; defaultValue = null }
-                    ),
+                    route = "settings/auth",
                     enterTransition = sharedAxisEnter,
                     exitTransition = sharedAxisExit,
                     popEnterTransition = sharedAxisPopEnter,
                     popExitTransition = sharedAxisPopExit
-                ) { backStackEntry ->
-                    val username = backStackEntry.arguments?.getString("username")
-                    userDetailContent {
-                        navController.navigate(logRouteWithArgs(chore = null, person = username))
-                    }
+                ) {
+                    SettingsAuthScreen(
+                        navController = navController,
+                        onNavigateToAuthLog = { navController.navigate("settings/authLog") }
+                    )
                 }
-                composable(ChoresDestination.Users.route) {
-                    usersContent { username -> navController.navigate(logRouteWithArgs(chore = null, person = username)) }
+                composable(
+                    route = "settings/chores",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) {
+                    SettingsChoresScreen(
+                        navController = navController,
+                        onNavigateToData = { navController.navigate("settings/data") }
+                    )
                 }
-                // Issue #146: navigation-compose 2.7.7's `navigation(...)` graph builder doesn't
-                // accept enter/exitTransition params (added in a later library version), so the
-                // shared-axis drill-in transition is set per-composable within this graph instead
-                // of once on the graph itself.
-                navigation(startDestination = "settings/menu", route = ChoresDestination.Settings.route) {
-                    composable(
-                        route = "settings/menu",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) {
-                        SettingsMenuContent(
-                            onNavigateToGeneral = { navController.navigate("settings/general") },
-                            onNavigateToAuth = { navController.navigate("settings/auth") },
-                            onNavigateToChores = { navController.navigate("settings/chores") },
-                            onNavigateToTheme = { navController.navigate("settings/theme") },
-                            onNavigateToData = { navController.navigate("settings/data") },
-                            onNavigateToAbout = { navController.navigate("settings/about") }
-                        )
-                    }
-                    composable(
-                        route = "settings/general",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) {
-                        SettingsGeneralScreen(navController = navController)
-                    }
-                    composable(
-                        route = "settings/auth",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) {
-                        SettingsAuthScreen(
-                            navController = navController,
-                            onNavigateToAuthLog = { navController.navigate("settings/authLog") }
-                        )
-                    }
-                    composable(
-                        route = "settings/chores",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) {
-                        SettingsChoresScreen(
-                            navController = navController,
-                            onNavigateToData = { navController.navigate("settings/data") }
-                        )
-                    }
-                    composable(
-                        route = "settings/about",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) {
-                        SettingsAboutScreen(navController = navController)
-                    }
-                    composable(
-                        route = "settings/authLog",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) { authLogContent() }
-                    composable(
-                        route = "settings/theme",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) { themeAdminContent() }
-                    composable(
-                        route = "settings/data",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) {
-                        dataSettingsContent(DataSettingsNavActions(onNavigateToPointsLog = { navController.navigate("settings/data/pointsLog") }))
-                    }
-                    composable(
-                        route = "settings/data/pointsLog",
-                        enterTransition = sharedAxisEnter,
-                        exitTransition = sharedAxisExit,
-                        popEnterTransition = sharedAxisPopEnter,
-                        popExitTransition = sharedAxisPopExit
-                    ) { pointsLogContent() }
+                composable(
+                    route = "settings/about",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) {
+                    SettingsAboutScreen(navController = navController)
                 }
-                composable(ChoresDestination.Preferences.route) { preferencesContent() }
+                composable(
+                    route = "settings/authLog",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) { authLogContent() }
+                composable(
+                    route = "settings/theme",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) { themeAdminContent() }
+                composable(
+                    route = "settings/data",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) {
+                    dataSettingsContent(DataSettingsNavActions(onNavigateToPointsLog = { navController.navigate("settings/data/pointsLog") }))
+                }
+                composable(
+                    route = "settings/data/pointsLog",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) { pointsLogContent() }
+                // Issue #167: Preferences (the personal theme picker) folds into the Settings
+                // sub-nav graph instead of being reachable only via the avatar dropdown.
+                composable(
+                    route = ChoresDestination.Preferences.route,
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) { preferencesContent() }
             }
         }
     }

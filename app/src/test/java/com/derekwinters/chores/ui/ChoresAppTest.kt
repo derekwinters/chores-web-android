@@ -3,8 +3,12 @@ package com.derekwinters.chores.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -18,12 +22,14 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Behaviors: drawer nav wiring the 5 primary destinations, admin-only Users visibility, the
- * Logout action (issue #10, area: ui), the TopAppBar's household/app title branding (issue #58,
- * area: ui), and the avatar/name identity + Preferences/Settings/Logout dropdown that replaces
- * Settings/Preferences as drawer destinations (issue #59, area: ui). Uses [ChoresAppContent]'s
- * injectable slots so this doesn't require a Hilt test component — see LoginContentTest and
- * ChoreListContentTest for the real screens' own behavior coverage.
+ * Issue #167 (ADR-0004) behaviors: a Material3 `NavigationBar` in `Scaffold.bottomBar` replaces
+ * the hamburger + expand-under-top-bar panel (issue #145) as primary navigation, the Dashboard/
+ * Board destination is relabeled "Home", Settings becomes visible to all users (admin-only
+ * content gated inside `SettingsMenuContent` instead — see SettingsMenuContentTest), Preferences
+ * folds into the Settings sub-nav graph, the avatar dropdown shrinks to identity + logout, and the
+ * Chores tab carries a numeric due-now badge. Uses [ChoresAppContent]'s injectable slots so this
+ * doesn't require a Hilt test component — see LoginContentTest and ChoreListContentTest for the
+ * real screens' own behavior coverage.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33])
@@ -37,6 +43,7 @@ class ChoresAppTest {
         isAdmin: Boolean = false,
         username: String = "alice",
         onLogout: () -> Unit = {},
+        dueNowCount: Int = 0,
         currentTitleProvider: @Composable () -> String? = { "Test Household" }
     ) {
         composeTestRule.setContent {
@@ -54,7 +61,8 @@ class ChoresAppTest {
                 currentUserProvider = { UiState.Success(CurrentUser(username, isAdmin)) },
                 isDatabaseReadyProvider = { true },
                 currentThemeProvider = { null },
-                currentTitleProvider = currentTitleProvider
+                currentTitleProvider = currentTitleProvider,
+                dueNowCountProvider = { dueNowCount }
             )
         }
     }
@@ -114,74 +122,143 @@ class ChoresAppTest {
     }
 
     @Test
-    fun choresApp_drawer_navigatesToChoresAndBackToDashboard() {
+    fun choresApp_bottomNav_navigatesToChoresAndBackToHome() {
         setContent()
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        composeTestRule.onNodeWithText("Chores").performClick()
+        composeTestRule.onNodeWithTag("navItem_chores").performClick()
         composeTestRule.onNodeWithText("Fake Chores").assertExists()
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        // Issue #60: the Dashboard destination's drawer label is "Board", matching web's PAGES copy.
-        composeTestRule.onNodeWithText("Board").performClick()
+        composeTestRule.onNodeWithTag("navItem_dashboard").performClick()
         composeTestRule.onNodeWithText("Fake Dashboard").assertExists()
     }
 
     @Test
-    fun choresApp_navPanel_hamburgerTogglesOpenAndClosedContentDescription() {
-        // Issue #145: tapping the hamburger a second time (without navigating anywhere) closes
-        // the panel again, and the content description reflects the open/closed state.
+    fun choresApp_hamburgerMenu_noLongerExists() {
+        // Issue #167: the hamburger toggle + expand-under-top-bar panel (issue #145) are removed
+        // entirely in favor of the bottom NavigationBar, not left dormant.
         setContent()
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        composeTestRule.onNodeWithTag("navItem_chores").assertExists()
-
-        composeTestRule.onNodeWithContentDescription("Close navigation menu").performClick()
-        composeTestRule.onNodeWithTag("navItem_chores").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Open navigation menu").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Close navigation menu").assertDoesNotExist()
     }
 
     @Test
-    fun choresApp_drawer_showsAllPrimaryDestinationsWithWebLabels() {
-        // Issue #60: web's PAGES order is Board -> Chores -> Users(admin) -> Log; verifies the
-        // renamed "Board"/"Log" labels are present (order itself is covered by drawerDestinations'
-        // declaration order, which drives ModalDrawerSheet's forEach rendering). Scoped by the
-        // navItem_<route> testTag (added alongside this test) rather than plain text, since the
-        // TopAppBar subtitle can legitimately show the same label text as the current drawer item
-        // (e.g. both read "Board" when Dashboard/Board is the start destination).
+    fun choresApp_bottomNav_dashboardLabelIsHome() {
+        // Issue #167: "Board" -> "Home" (route unchanged), an intentional divergence from web's copy.
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_dashboard").assertTextEquals("Home")
+    }
+
+    @Test
+    fun choresApp_bottomNav_admin_showsAllFiveDestinationsWithLabels() {
         setContent(isAdmin = true)
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        composeTestRule.onNodeWithTag("navItem_dashboard").assertTextEquals("Board")
+        composeTestRule.onNodeWithTag("navItem_dashboard").assertTextEquals("Home")
         composeTestRule.onNodeWithTag("navItem_chores").assertTextEquals("Chores")
         composeTestRule.onNodeWithTag("navItem_users").assertTextEquals("Users")
         composeTestRule.onNodeWithTag("navItem_log").assertTextEquals("Log")
+        composeTestRule.onNodeWithTag("navItem_settings").assertTextEquals("Settings")
     }
 
     @Test
-    fun choresApp_nonAdmin_hidesAdminOnlyDestinations() {
+    fun choresApp_bottomNav_nonAdmin_hidesUsersButKeepsSettingsVisible() {
+        // Issue #167: Settings loses its admin-only gate (now reachable by everyone for the
+        // folded-in Preferences entry); Users remains admin-only and hidden entirely -- non-admins
+        // see 3 of 5 tabs (Home, Chores, Log), which is intentional, not a bug.
         setContent(isAdmin = false)
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        composeTestRule.onNodeWithText("Users").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("navItem_users").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("navItem_settings").assertExists()
+        composeTestRule.onNodeWithTag("navItem_dashboard").assertExists()
+        composeTestRule.onNodeWithTag("navItem_chores").assertExists()
+        composeTestRule.onNodeWithTag("navItem_log").assertExists()
     }
 
     @Test
-    fun choresApp_admin_showsAdminOnlyDestinations() {
+    fun choresApp_bottomNav_admin_showsUsersTab() {
         setContent(isAdmin = true)
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        composeTestRule.onNodeWithText("Users").assertExists()
+        composeTestRule.onNodeWithTag("navItem_users").assertExists()
     }
 
     @Test
-    fun choresApp_drawer_noLongerListsSettingsOrPreferences() {
-        // Issue #59: matches web's PAGES list, which keeps Settings/Preferences out of primary
-        // nav — they're reachable only via the avatar dropdown now.
+    fun choresApp_bottomNav_homeTabIsSelectedOnStart() {
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_dashboard").assertIsSelected()
+    }
+
+    @Test
+    fun choresApp_choresTab_noDueChores_showsNoBadge() {
+        setContent(dueNowCount = 0)
+
+        composeTestRule.onNodeWithTag("choresDueNowBadge").assertDoesNotExist()
+    }
+
+    @Test
+    fun choresApp_choresTab_dueChores_showsBadgeWithCount() {
+        // Issue #167: numeric Badge on the Chores tab shows the signed-in user's own due-now count.
+        setContent(dueNowCount = 3)
+
+        composeTestRule.onNodeWithTag("choresDueNowBadge", useUnmergedTree = true).assertExists()
+        // useUnmergedTree disables all merging, so the Badge's own text lives on its Text child
+        // rather than on the tagged node itself.
+        composeTestRule.onNodeWithTag("choresDueNowBadge", useUnmergedTree = true)
+            .onChildren()[0]
+            .assertTextEquals("3")
+    }
+
+    @Test
+    fun choresApp_settingsTab_nonAdmin_showsPreferencesButNotAdminOnlyRows() {
+        // Issue #167: navigating to the Settings tab renders the real SettingsMenuContent (not an
+        // injectable fake), so this exercises the ChoresApp <-> SettingsMenuContent isAdmin wiring
+        // end-to-end; row-level gating detail itself is covered by SettingsMenuContentTest.
+        setContent(isAdmin = false)
+
+        composeTestRule.onNodeWithTag("navItem_settings").performClick()
+
+        composeTestRule.onNodeWithText("Preferences").assertExists()
+        composeTestRule.onNodeWithText("General").assertDoesNotExist()
+    }
+
+    @Test
+    fun choresApp_settingsTab_admin_showsAdminOnlyRows() {
         setContent(isAdmin = true)
 
-        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
-        composeTestRule.onNodeWithText("Settings").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("navItem_settings").performClick()
+
+        composeTestRule.onNodeWithText("General").assertExists()
+    }
+
+    @Test
+    fun choresApp_preferencesReachableViaSettingsMenu_keepsSettingsTabHighlighted() {
+        // Issue #167 behavior 4/10: Preferences is folded into the Settings menu (not the avatar
+        // dropdown), and the existing isCurrent() hierarchy-prefix match keeps the Settings tab
+        // highlighted while drilled into "settings/preferences".
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_settings").performClick()
+        composeTestRule.onNodeWithText("Preferences").performClick()
+
+        composeTestRule.onNodeWithText("Fake Preferences").assertExists()
+        composeTestRule.onNodeWithTag("navItem_settings").assertIsSelected()
+        composeTestRule.onNodeWithText("Preferences").assertExists()
+    }
+
+    @Test
+    fun choresApp_userMenu_offersOnlyLogout() {
+        // Issue #167: the avatar dropdown shrinks to identity + logout only -- Preferences and
+        // Settings are reachable via the bottom nav now. "Settings" text still exists once (the
+        // bottom-nav tab label), so this asserts the dropdown doesn't add a second occurrence
+        // rather than asserting global absence.
+        setContent(isAdmin = true)
+
+        composeTestRule.onNodeWithTag("userMenuTrigger").performClick()
+
+        composeTestRule.onNodeWithText("Logout").assertExists()
         composeTestRule.onNodeWithText("Preferences").assertDoesNotExist()
+        composeTestRule.onAllNodesWithText("Settings").assertCountEquals(1)
     }
 
     @Test
@@ -190,33 +267,6 @@ class ChoresAppTest {
 
         composeTestRule.onNodeWithText("A").assertExists()
         composeTestRule.onNodeWithText("alice").assertExists()
-    }
-
-    @Test
-    fun choresApp_userMenu_nonAdmin_offersPreferencesAndLogoutButNotSettings() {
-        setContent(isAdmin = false)
-
-        composeTestRule.onNodeWithTag("userMenuTrigger").performClick()
-        composeTestRule.onNodeWithText("Preferences").assertExists()
-        composeTestRule.onNodeWithText("Logout").assertExists()
-        composeTestRule.onNodeWithText("Settings").assertDoesNotExist()
-    }
-
-    @Test
-    fun choresApp_userMenu_admin_offersSettings() {
-        setContent(isAdmin = true)
-
-        composeTestRule.onNodeWithTag("userMenuTrigger").performClick()
-        composeTestRule.onNodeWithText("Settings").assertExists()
-    }
-
-    @Test
-    fun choresApp_userMenu_preferencesNavigatesToPreferencesScreen() {
-        setContent()
-
-        composeTestRule.onNodeWithTag("userMenuTrigger").performClick()
-        composeTestRule.onNodeWithText("Preferences").performClick()
-        composeTestRule.onNodeWithText("Fake Preferences").assertExists()
     }
 
     @Test
