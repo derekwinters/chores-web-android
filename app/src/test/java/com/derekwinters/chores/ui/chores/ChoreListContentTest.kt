@@ -48,31 +48,11 @@ class ChoreListContentTest {
     )
 
     @Test
-    fun choreListContent_addChoreFab_showsTextLabelAndInvokesCallback() {
-        // Issue #70: extended FAB with an "Add Chore" text label, not icon-only.
-        var added = false
-        composeTestRule.setContent {
-            ChoreListContent(
-                uiState = UiState.Success(listOf(assignedChore)),
-                completingChoreId = null,
-                onComplete = { _, _ -> },
-                onAddChore = { added = true }
-            )
-        }
-
-        // ExtendedFloatingActionButton's icon+text don't merge into a single semantics node by
-        // default, so the merged-tree finder can't locate the text node -- useUnmergedTree is
-        // required here.
-        composeTestRule.onNodeWithText("Add Chore", useUnmergedTree = true).performClick()
-
-        assert(added)
-    }
-
-    @Test
-    fun choreListContent_filterIconRow_showsOneIconPerGroupPlusOverflow() {
+    fun choreListContent_filterIconRow_showsSearchIconPlusOneIconPerGroupPlusOverflow() {
         // Issue #162: the "Filters" text button is replaced by a compact row of per-group filter
         // icons (Assignee, Status, Due-within) plus an overflow "More filters" icon that opens
-        // the full ChoreFiltersDialog.
+        // the full ChoreFiltersDialog. Issue #180: a collapsible search icon is now the first
+        // entry in this same row.
         composeTestRule.setContent {
             ChoreListContent(
                 uiState = UiState.Success(listOf(assignedChore)),
@@ -81,6 +61,7 @@ class ChoreListContentTest {
             )
         }
 
+        composeTestRule.onNodeWithContentDescription("Search chores").assertExists()
         composeTestRule.onNodeWithContentDescription("Filter by assignee").assertExists()
         composeTestRule.onNodeWithContentDescription("Filter by status").assertExists()
         composeTestRule.onNodeWithContentDescription("Filter by due date").assertExists()
@@ -209,10 +190,10 @@ class ChoreListContentTest {
         }
 
         composeTestRule.onNodeWithText("Dishes").performClick()
-        // The expanded row's action-button Row can render taller than the viewport once the
-        // Add-Chore FAB's carved-out bottom padding is applied; performScrollTo() is a safe
-        // no-op when the node is already fully visible, so it's applied consistently to every
-        // expanded-row button click in this file rather than only the ones observed to need it.
+        // The expanded row's action-button Row can render taller than the viewport in the test
+        // environment; performScrollTo() is a safe no-op when the node is already fully visible,
+        // so it's applied consistently to every expanded-row button click in this file rather
+        // than only the ones observed to need it.
         composeTestRule.onNodeWithContentDescription("Complete").performScrollTo().performClick()
 
         assert(completed == (assignedChore to null))
@@ -277,6 +258,85 @@ class ChoreListContentTest {
     }
 
     @Test
+    fun choreListContent_search_collapsedByDefault_hidesFieldShowsOtherFilterIcons() {
+        // Issue #180: search starts collapsed (icon-only) when no query is active yet, unlike the
+        // old always-visible field -- the other filter icons stay visible alongside it.
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(assignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Search chores").assertExists()
+        composeTestRule.onNodeWithText("Search chores").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Filter by assignee").assertExists()
+    }
+
+    @Test
+    fun choreListContent_search_tapIcon_expandsFieldAndHidesOtherFilterIcons() {
+        // Issue #180: tapping the search icon morphs the row into a full-width field + back icon,
+        // hiding the Assignee/State/Due-within/Tune icons while expanded.
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(assignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Search chores").performClick()
+
+        composeTestRule.onNodeWithText("Search chores").assertExists()
+        composeTestRule.onNodeWithContentDescription("Collapse search").assertExists()
+        composeTestRule.onNodeWithContentDescription("Filter by assignee").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Filter by status").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Filter by due date").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("More filters").assertDoesNotExist()
+    }
+
+    @Test
+    fun choreListContent_search_activeQuery_startsExpandedOnFirstComposition() {
+        // Issue #180: the field starts expanded already if a query is already active on first
+        // composition (e.g. returning to the screen with a filter carried over).
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(assignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> },
+                filters = ChoreFilters(query = "dish")
+            )
+        }
+
+        composeTestRule.onNodeWithText("Search chores").assertExists()
+        composeTestRule.onNodeWithContentDescription("Filter by assignee").assertDoesNotExist()
+    }
+
+    @Test
+    fun choreListContent_search_collapseIcon_restoresFilterIconsWithoutClearingQuery() {
+        // Issue #180: collapsing preserves the query -- the filter stays active, only the field
+        // itself hides back behind the (now-badged) search icon.
+        var queryChangedTo: String? = null
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(assignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> },
+                filters = ChoreFilters(query = "dish"),
+                onQueryChange = { queryChangedTo = it }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Collapse search").performClick()
+
+        composeTestRule.onNodeWithText("Search chores").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Filter by assignee").assertExists()
+        composeTestRule.onNodeWithContentDescription("Search chores").assertExists()
+        assert(queryChangedTo == null)
+    }
+
+    @Test
     fun choreListContent_search_invokesOnQueryChange() {
         var query: String? = null
         composeTestRule.setContent {
@@ -288,6 +348,7 @@ class ChoreListContentTest {
             )
         }
 
+        composeTestRule.onNodeWithContentDescription("Search chores").performClick()
         composeTestRule.onNodeWithText("Search chores").performTextInput("dish")
 
         assert(query == "dish")
@@ -295,7 +356,9 @@ class ChoreListContentTest {
 
     @Test
     fun choreListContent_search_clearButtonHiddenWhenEmptyShownWhenNotEmpty() {
-        // Issue #69: leading search icon + trailing clear ("x") button on the search field.
+        // Issue #69: trailing clear ("x") button on the search field, shown once it's expanded
+        // (here: auto-expanded since a query is already active -- see the
+        // choreListContent_search_activeQuery_startsExpandedOnFirstComposition test above).
         composeTestRule.setContent {
             ChoreListContent(
                 uiState = UiState.Success(listOf(assignedChore)),
@@ -428,10 +491,8 @@ class ChoreListContentTest {
         }
 
         composeTestRule.onNodeWithText("Dishes").performClick()
-        // The row's Delete button can render underneath the fixed Add-Chore FAB depending on
-        // available viewport height; performScrollTo() uses the LazyColumn's contentPadding
-        // headroom (see ChoreListContent) to scroll it clear of the FAB's fixed overlap zone
-        // before clicking, so the FAB doesn't intercept the touch instead.
+        // The row's Delete button can render outside the visible viewport depending on available
+        // height in the test environment; performScrollTo() scrolls it into view first.
         composeTestRule.onNodeWithContentDescription("Delete").performScrollTo().performClick()
         composeTestRule.onNodeWithText("This also removes all points history for this chore and cannot be undone.").assertExists()
 

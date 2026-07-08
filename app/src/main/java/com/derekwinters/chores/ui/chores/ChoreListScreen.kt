@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -30,7 +30,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,8 +70,10 @@ import java.util.Locale
  * current_assignee == null". Issue #13 adds live search, filters, and sorting; issue #14 adds
  * the stats panel above this (see ChoresStatsPanel); issue #12 adds [initialAssignee]/
  * [initialDueWithin] so Dashboard's Due Now/Due Soon links land here pre-filtered; issue #15
- * adds tap-to-expand row detail plus Skip/Mark Due Now/Delete/History actions; issue #16 adds
- * the Add-chore FAB and per-row Edit action via [navActions].
+ * adds tap-to-expand row detail plus Skip/Mark Due Now/Delete/History actions and per-row Edit
+ * action via [navActions]. Issue #180 removes the Add-chore FAB issue #16/#70 added -- Add Chore
+ * now lives in the shared top app bar (see `ChoresApp.kt`'s `ChoresAuthenticatedScaffold`)
+ * instead, which also removes the FAB/list-content overlap problem investigated under #177.
  *
  * Thin Hilt-wired wrapper around [ChoreListContent]; see ChoreListContentTest for behavior
  * coverage that doesn't require a Hilt test component.
@@ -119,7 +120,6 @@ fun ChoreListScreen(
         onDelete = viewModel::deleteChore,
         onHistory = { chore -> navActions.onNavigateToHistory(chore.name) },
         onEdit = { chore -> navActions.onNavigateToEditChore(chore.id) },
-        onAddChore = navActions.onNavigateToCreateChore,
         onQueryChange = viewModel::updateQuery,
         onFiltersChange = viewModel::updateFilters
     )
@@ -143,7 +143,6 @@ fun ChoreListContent(
     onDelete: (Chore) -> Unit = {},
     onHistory: (Chore) -> Unit = {},
     onEdit: (Chore) -> Unit = {},
-    onAddChore: () -> Unit = {},
     onQueryChange: (String) -> Unit = {},
     onFiltersChange: (ChoreFilters) -> Unit = {},
     statsPanel: @Composable () -> Unit = {}
@@ -160,76 +159,51 @@ fun ChoreListContent(
     var choreAwaitingDelete by remember { mutableStateOf<Chore?>(null) }
     var showFiltersDialog by remember { mutableStateOf(false) }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Issue #162: search field stays at the top, matching mobile web.
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    modifier = Modifier.weight(1f),
-                    value = filters.query,
-                    onValueChange = onQueryChange,
-                    label = { Text(stringResource(R.string.search_chores_label)) },
-                    singleLine = true,
-                    // Issue #69: leading search icon + trailing clear ("x") button, matching web's
-                    // search field.
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (filters.query.isNotEmpty()) {
-                            IconButton(onClick = { onQueryChange("") }) {
-                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.clear_search))
-                            }
-                        }
-                    }
-                )
-            }
+    Column(modifier = modifier.fillMaxSize()) {
+        // Issue #180: search is now a collapsible icon inside ChoreFilterIconRow itself (carried
+        // forward from #177's validated design) instead of an always-visible field above it -- see
+        // ChoreFilterIconRow for the expand/collapse behavior.
+        // Issue #162: compact row of flat filter icon buttons (Assignee, Status, Due-within) plus
+        // an overflow "Tune" icon for the remaining groups (schedule type, assignment type,
+        // enabled status) -- replaces the single "Filters" text button, matching mobile web's top
+        // filter icon row.
+        ChoreFilterIconRow(
+            filters = filters,
+            availableAssignees = availableAssignees,
+            onFiltersChange = onFiltersChange,
+            onQueryChange = onQueryChange,
+            onMoreFiltersClick = { showFiltersDialog = true }
+        )
 
-            // Issue #162: compact row of flat filter icon buttons (Assignee, Status, Due-within)
-            // plus an overflow "Tune" icon for the remaining groups (schedule type, assignment
-            // type, enabled status) -- replaces the single "Filters" text button, matching mobile
-            // web's top filter icon row.
-            ChoreFilterIconRow(
-                filters = filters,
-                availableAssignees = availableAssignees,
-                onFiltersChange = onFiltersChange,
-                onMoreFiltersClick = { showFiltersDialog = true }
+        // Issue #162: stats moved below the filter row and collapsed by default (see
+        // ChoresStatsPanelContent's initiallyExpanded default), matching mobile web's layout.
+        statsPanel()
+
+        // Issue #74: "Showing N of M chores" is now always visible (previously hidden unless
+        // filters were active), matching web's always-visible count. "Clear filters" remains
+        // conditional -- it wouldn't make sense to offer clearing filters that aren't active.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val visibleCount = (uiState as? UiState.Success)?.data?.size ?: 0
+            Text(
+                text = stringResource(R.string.showing_n_of_m_chores, visibleCount, totalCount),
+                style = MaterialTheme.typography.bodySmall
             )
-
-            // Issue #162: stats moved below the filter row and collapsed by default (see
-            // ChoresStatsPanelContent's initiallyExpanded default), matching mobile web's layout.
-            statsPanel()
-
-            // Issue #74: "Showing N of M chores" is now always visible (previously hidden unless
-            // filters were active), matching web's always-visible count. "Clear filters" remains
-            // conditional -- it wouldn't make sense to offer clearing filters that aren't active.
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val visibleCount = (uiState as? UiState.Success)?.data?.size ?: 0
-                Text(
-                    text = stringResource(R.string.showing_n_of_m_chores, visibleCount, totalCount),
-                    style = MaterialTheme.typography.bodySmall
-                )
-                if (filters.isActive) {
-                    TextButton(onClick = { onFiltersChange(ChoreFilters()) }) {
-                        Text(stringResource(R.string.clear_filters))
-                    }
+            if (filters.isActive) {
+                TextButton(onClick = { onFiltersChange(ChoreFilters()) }) {
+                    Text(stringResource(R.string.clear_filters))
                 }
             }
+        }
 
-        // Issue #74 CI fix: real (not contentPadding) bottom padding matching the Add-Chore FAB's
-        // fixed footprint (56.dp ExtendedFloatingActionButton + 16.dp align/padding inset, plus
-        // margin), so the LazyColumn is actually MEASURED/LAID OUT within a smaller region that
-        // ends above the FAB's zone -- unlike LazyColumn's own contentPadding (which only adds
-        // trailing scrollable space and does nothing for an already-in-viewport, never-scrolled
-        // item), a real Modifier.padding here shrinks the box's real layout bounds, so even the
-        // very first row's content can never render underneath the fixed FAB (which sits on top
-        // in z-order and would otherwise intercept/steal those clicks).
-        Box(modifier = Modifier.weight(1f).fillMaxSize().padding(bottom = 88.dp)) {
+        // Issue #180: Add Chore moved to the top app bar and the FAB was removed entirely, which
+        // also removes the FAB/list-content overlap problem investigated under #177 by
+        // construction -- this Box no longer needs the fixed-footprint bottom padding issue #74
+        // added to keep the last row clear of the FAB.
+        Box(modifier = Modifier.weight(1f).fillMaxSize()) {
             when (val state = uiState) {
                 is UiState.Idle, is UiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -277,16 +251,6 @@ fun ChoreListContent(
                 }
             }
         }
-    }
-
-        // Issue #70: extended FAB with an "Add Chore" text label alongside the icon, matching
-        // web's icon+text button treatment (previously icon-only).
-        ExtendedFloatingActionButton(
-            onClick = onAddChore,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-            text = { Text(stringResource(R.string.add_chore)) }
-        )
     }
 
     if (showFiltersDialog) {
@@ -571,118 +535,155 @@ private fun ChoreMetaItem(label: String, value: String, modifier: Modifier = Mod
  * A group's icon is tinted primary when that group holds a non-default value, so active filters
  * are visible at a glance without opening any menu. The underlying [ChoreFilters] model and
  * [onFiltersChange] contract are unchanged -- this only changes how filters are edited.
+ *
+ * Issue #180 (carried forward from #177's validated design): search is a collapsible icon --
+ * the first entry in this row -- rather than an always-visible field above it. Tapping it morphs
+ * the whole row into a full-width text field + back/collapse icon, hiding the other filter icons
+ * while expanded; collapsing preserves the query (the filter stays active, surfaced via the
+ * search icon's own active badge once collapsed again); the field starts expanded already if a
+ * query is active on first composition (e.g. returning to the screen with a filter carried over).
  */
 @Composable
 private fun ChoreFilterIconRow(
     filters: ChoreFilters,
     availableAssignees: List<String>,
     onFiltersChange: (ChoreFilters) -> Unit,
+    onQueryChange: (String) -> Unit,
     onMoreFiltersClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var assigneeMenuExpanded by remember { mutableStateOf(false) }
     var stateMenuExpanded by remember { mutableStateOf(false) }
     var dueWithinMenuExpanded by remember { mutableStateOf(false) }
+    var searchExpanded by remember { mutableStateOf(filters.query.isNotEmpty()) }
 
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box {
-            FilterGroupIconButton(
-                icon = Icons.Filled.Person,
-                contentDescription = stringResource(R.string.filter_assignee_label),
-                active = filters.assignees.isNotEmpty(),
-                onClick = { assigneeMenuExpanded = true }
-            )
-            DropdownMenu(expanded = assigneeMenuExpanded, onDismissRequest = { assigneeMenuExpanded = false }) {
-                if (availableAssignees.isEmpty()) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.filter_assignee)) }, onClick = {})
+        if (searchExpanded) {
+            IconButton(onClick = { searchExpanded = false }) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.collapse_search))
+            }
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = filters.query,
+                onValueChange = onQueryChange,
+                label = { Text(stringResource(R.string.search_chores_label)) },
+                singleLine = true,
+                // Issue #69: trailing clear ("x") button, matching web's search field.
+                trailingIcon = {
+                    if (filters.query.isNotEmpty()) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.clear_search))
+                        }
+                    }
                 }
-                // Multi-select: stays open across taps (only closes via outside-tap/dismiss) so
-                // several assignees can be toggled in one go, matching a filter checklist.
-                availableAssignees.forEach { assignee ->
-                    val checked = assignee in filters.assignees
-                    DropdownMenuItem(
-                        text = { Text(assignee) },
-                        leadingIcon = if (checked) {
-                            { Icon(Icons.Filled.CheckCircle, contentDescription = null) }
-                        } else {
-                            null
-                        },
-                        onClick = {
-                            onFiltersChange(
-                                filters.copy(
-                                    assignees = if (checked) filters.assignees - assignee else filters.assignees + assignee
+            )
+        } else {
+            FilterGroupIconButton(
+                icon = Icons.Filled.Search,
+                contentDescription = stringResource(R.string.search_chores_label),
+                active = filters.query.isNotEmpty(),
+                onClick = { searchExpanded = true }
+            )
+
+            Box {
+                FilterGroupIconButton(
+                    icon = Icons.Filled.Person,
+                    contentDescription = stringResource(R.string.filter_assignee_label),
+                    active = filters.assignees.isNotEmpty(),
+                    onClick = { assigneeMenuExpanded = true }
+                )
+                DropdownMenu(expanded = assigneeMenuExpanded, onDismissRequest = { assigneeMenuExpanded = false }) {
+                    if (availableAssignees.isEmpty()) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.filter_assignee)) }, onClick = {})
+                    }
+                    // Multi-select: stays open across taps (only closes via outside-tap/dismiss) so
+                    // several assignees can be toggled in one go, matching a filter checklist.
+                    availableAssignees.forEach { assignee ->
+                        val checked = assignee in filters.assignees
+                        DropdownMenuItem(
+                            text = { Text(assignee) },
+                            leadingIcon = if (checked) {
+                                { Icon(Icons.Filled.CheckCircle, contentDescription = null) }
+                            } else {
+                                null
+                            },
+                            onClick = {
+                                onFiltersChange(
+                                    filters.copy(
+                                        assignees = if (checked) filters.assignees - assignee else filters.assignees + assignee
+                                    )
                                 )
-                            )
-                        }
-                    )
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Box {
-            FilterGroupIconButton(
-                icon = Icons.Filled.CheckCircle,
-                contentDescription = stringResource(R.string.filter_state_label),
-                active = filters.state != ChoreStateFilter.ALL,
-                onClick = { stateMenuExpanded = true }
-            )
-            DropdownMenu(expanded = stateMenuExpanded, onDismissRequest = { stateMenuExpanded = false }) {
-                val options = listOf(
-                    ChoreStateFilter.ALL to stringResource(R.string.filter_state_all),
-                    ChoreStateFilter.DUE to stringResource(R.string.filter_state_due),
-                    ChoreStateFilter.COMPLETE to stringResource(R.string.filter_state_complete)
+            Box {
+                FilterGroupIconButton(
+                    icon = Icons.Filled.CheckCircle,
+                    contentDescription = stringResource(R.string.filter_state_label),
+                    active = filters.state != ChoreStateFilter.ALL,
+                    onClick = { stateMenuExpanded = true }
                 )
-                options.forEach { (value, label) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            onFiltersChange(filters.copy(state = value))
-                            stateMenuExpanded = false
-                        }
+                DropdownMenu(expanded = stateMenuExpanded, onDismissRequest = { stateMenuExpanded = false }) {
+                    val options = listOf(
+                        ChoreStateFilter.ALL to stringResource(R.string.filter_state_all),
+                        ChoreStateFilter.DUE to stringResource(R.string.filter_state_due),
+                        ChoreStateFilter.COMPLETE to stringResource(R.string.filter_state_complete)
                     )
+                    options.forEach { (value, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                onFiltersChange(filters.copy(state = value))
+                                stateMenuExpanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Box {
-            FilterGroupIconButton(
-                icon = Icons.Filled.Schedule,
-                contentDescription = stringResource(R.string.filter_due_within_label),
-                active = filters.dueWithin != DueWithinFilter.ALL,
-                onClick = { dueWithinMenuExpanded = true }
-            )
-            DropdownMenu(expanded = dueWithinMenuExpanded, onDismissRequest = { dueWithinMenuExpanded = false }) {
-                val options = listOf(
-                    DueWithinFilter.ALL to stringResource(R.string.due_within_all),
-                    DueWithinFilter.TODAY to stringResource(R.string.due_within_today),
-                    DueWithinFilter.NEXT_3_DAYS to stringResource(R.string.due_within_3_days),
-                    DueWithinFilter.NEXT_7_DAYS to stringResource(R.string.due_within_7_days),
-                    DueWithinFilter.NEXT_30_DAYS to stringResource(R.string.due_within_30_days)
+            Box {
+                FilterGroupIconButton(
+                    icon = Icons.Filled.Schedule,
+                    contentDescription = stringResource(R.string.filter_due_within_label),
+                    active = filters.dueWithin != DueWithinFilter.ALL,
+                    onClick = { dueWithinMenuExpanded = true }
                 )
-                options.forEach { (value, label) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            onFiltersChange(filters.copy(dueWithin = value))
-                            dueWithinMenuExpanded = false
-                        }
+                DropdownMenu(expanded = dueWithinMenuExpanded, onDismissRequest = { dueWithinMenuExpanded = false }) {
+                    val options = listOf(
+                        DueWithinFilter.ALL to stringResource(R.string.due_within_all),
+                        DueWithinFilter.TODAY to stringResource(R.string.due_within_today),
+                        DueWithinFilter.NEXT_3_DAYS to stringResource(R.string.due_within_3_days),
+                        DueWithinFilter.NEXT_7_DAYS to stringResource(R.string.due_within_7_days),
+                        DueWithinFilter.NEXT_30_DAYS to stringResource(R.string.due_within_30_days)
                     )
+                    options.forEach { (value, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                onFiltersChange(filters.copy(dueWithin = value))
+                                dueWithinMenuExpanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        // Overflow: schedule type, assignment type, and enabled status don't get their own
-        // top-level icon -- they stay behind the full ChoreFiltersDialog, same as this icon also
-        // duplicating the three groups above for anyone who prefers the full dialog.
-        FilterGroupIconButton(
-            icon = Icons.Filled.Tune,
-            contentDescription = stringResource(R.string.filter_more_label),
-            active = filters.scheduleType != null || filters.assignmentType != null || filters.enabledFilter != EnabledFilter.ALL,
-            onClick = onMoreFiltersClick
-        )
+            // Overflow: schedule type, assignment type, and enabled status don't get their own
+            // top-level icon -- they stay behind the full ChoreFiltersDialog, same as this icon
+            // also duplicating the three groups above for anyone who prefers the full dialog.
+            FilterGroupIconButton(
+                icon = Icons.Filled.Tune,
+                contentDescription = stringResource(R.string.filter_more_label),
+                active = filters.scheduleType != null || filters.assignmentType != null || filters.enabledFilter != EnabledFilter.ALL,
+                onClick = onMoreFiltersClick
+            )
+        }
     }
 }
 

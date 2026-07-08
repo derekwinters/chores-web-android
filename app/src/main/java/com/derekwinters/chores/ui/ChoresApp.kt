@@ -12,11 +12,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
@@ -29,7 +29,9 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -159,6 +161,17 @@ sealed class ChoresDestination(
     data object Settings : ChoresDestination("settings", R.string.nav_settings, Icons.Filled.Settings)
     data object Preferences : ChoresDestination("settings/preferences", R.string.nav_preferences, Icons.Filled.Palette)
 }
+
+/**
+ * Issue #180: the Chores list screen's registered route pattern, with its query-arg placeholders
+ * literal and unresolved -- this is exactly what `NavDestination.route` reports while that screen
+ * is current, regardless of which (if any) query-arg values are actually present. Shared between
+ * the `NavHost` registration below and [ChoresAuthenticatedScaffold]'s top-bar Add-Chore
+ * visibility check, which needs an **exact** match against this rather than the existing
+ * `isCurrent()` prefix-match helper (that helper intentionally also matches "chores/new" and
+ * "chores/{choreId}/edit", which must NOT show the Add-Chore button).
+ */
+private val choresListRoute = "${ChoresDestination.Chores.route}?assignee={assignee}&dueWithin={dueWithin}"
 
 /** Issue #12: builds the Chores route + query args for a Dashboard Due Now/Due Soon deep link. */
 private fun choresRouteWithArgs(assignee: String?, dueWithin: String?): String {
@@ -342,7 +355,11 @@ fun ChoresAppContent(
 @Composable
 private fun ChoresAuthenticatedScaffold(
     isAdmin: Boolean,
-    /** Issue #59: shown as the avatar initial + name in the top bar's user menu. */
+    /**
+     * Issue #59: shown as the avatar initial in the top bar's `navigationIcon`. Issue #180: the
+     * full username moved from an inline top-bar Text into a "Signed in as" header in the
+     * dropdown the avatar opens.
+     */
     username: String?,
     onLogout: () -> Unit,
     /** Issue #58: household/app title branding; null falls back to `R.string.app_name`. */
@@ -376,6 +393,11 @@ private fun ChoresAuthenticatedScaffold(
     // "settings/*" sub-route, including the folded-in "settings/preferences" screen.
     fun isCurrent(dest: ChoresDestination) =
         currentDestination?.hierarchy?.any { it.route?.startsWith(dest.route) == true } == true
+    // Issue #180: exact match against the Chores list screen's own registered route -- unlike
+    // isCurrent() above, this must NOT also match "chores/new"/"chores/{choreId}/edit" (see
+    // [choresListRoute]'s doc), since the top bar's Add-Chore action would otherwise incorrectly
+    // show while already on the create/edit screens themselves.
+    val isChoresListScreen = currentDestination?.route == choresListRoute
     val currentLabel = when {
         // Issue #98: the page title reads "Manage Users" (web parity) while the bottom-nav item
         // keeps the shorter "Users" label — these are intentionally decoupled.
@@ -409,41 +431,44 @@ private fun ChoresAuthenticatedScaffold(
                         Text(currentLabel, style = MaterialTheme.typography.bodySmall)
                     }
                 },
-                actions = {
-                    // Issue #59: restores web's user identity treatment (`UserAvatarMenu.jsx`
-                    // lines 45-51) — a colored circle with the user's initial plus their name —
-                    // in place of the generic MoreVert icon. Issue #167: the dropdown itself now
-                    // only offers identity + logout, since Preferences/Settings moved to the
-                    // bottom nav.
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                // Issue #180 (ADR-0005): the avatar moves from `actions` (right) into
+                // `navigationIcon` (left), circle-only -- `navigationIcon` is sized for a single
+                // compact icon, not icon+text, so the inline username moves into the dropdown as
+                // a new "Signed in as" header instead. This is an intentional, documented
+                // deviation from the nav-icon-means-back convention: this app's flat bottom-nav
+                // structure has no top-bar-level back stack for that slot to otherwise conflict
+                // with. `actions` is freed up for the new per-screen Add-Chore button below.
+                navigationIcon = {
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .padding(end = 12.dp)
+                            .padding(start = 12.dp)
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiary)
                             .testTag("userMenuTrigger")
                             .clickable { userMenuExpanded = true }
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.tertiary)
-                        ) {
-                            Text(
-                                text = username?.take(1)?.uppercase().orEmpty(),
-                                color = MaterialTheme.colorScheme.onTertiary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Text(
+                            text = username?.take(1)?.uppercase().orEmpty(),
+                            color = MaterialTheme.colorScheme.onTertiary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    // Issue #167: the dropdown itself only offers identity + logout, since
+                    // Preferences/Settings moved to the bottom nav. Issue #180 adds the
+                    // non-clickable "Signed in as" header above Logout so the username -- no
+                    // longer shown inline in the top bar itself -- stays reachable one tap deeper.
+                    DropdownMenu(expanded = userMenuExpanded, onDismissRequest = { userMenuExpanded = false }) {
                         if (username != null) {
                             Text(
-                                text = username,
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyMedium
+                                text = stringResource(R.string.signed_in_as_format, username),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                             )
+                            HorizontalDivider()
                         }
-                    }
-                    DropdownMenu(expanded = userMenuExpanded, onDismissRequest = { userMenuExpanded = false }) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.logout)) },
                             leadingIcon = { Icon(Icons.Filled.Logout, contentDescription = null) },
@@ -452,6 +477,18 @@ private fun ChoresAuthenticatedScaffold(
                                 onLogout()
                             }
                         )
+                    }
+                },
+                actions = {
+                    // Issue #180 (ADR-0005): the top bar is shared across every screen, so this
+                    // per-screen action only renders while the Chores list screen itself is
+                    // current (exact match -- see [isChoresListScreen]), wired directly to
+                    // navController since it's already in scope here (no callback threading
+                    // through the NavHost content lambdas needed).
+                    if (isChoresListScreen) {
+                        IconButton(onClick = { navController.navigate("chores/new") }) {
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_chore))
+                        }
                     }
                 }
             )
@@ -523,7 +560,7 @@ private fun ChoresAuthenticatedScaffold(
                 )
             }
             composable(
-                route = "${ChoresDestination.Chores.route}?assignee={assignee}&dueWithin={dueWithin}",
+                route = choresListRoute,
                 arguments = listOf(
                     navArgument("assignee") {
                         type = NavType.StringType
@@ -544,7 +581,6 @@ private fun ChoresAuthenticatedScaffold(
                         onNavigateToHistory = { choreName ->
                             navController.navigate(logRouteWithArgs(chore = choreName, person = null))
                         },
-                        onNavigateToCreateChore = { navController.navigate("chores/new") },
                         onNavigateToEditChore = { choreId -> navController.navigate("chores/$choreId/edit") }
                     )
                 )

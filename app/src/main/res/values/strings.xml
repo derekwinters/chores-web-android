@@ -16,6 +16,10 @@
     <string name="nav_preferences">Preferences</string>
     <string name="user_menu">User menu</string>
     <string name="logout">Logout</string>
+    <!-- Issue #180: non-clickable header shown above Logout in the avatar dropdown, since the
+         top bar's navigationIcon slot only has room for the initial circle, not inline username
+         text. -->
+    <string name="signed_in_as_format">Signed in as %1$s</string>
     <string name="coming_soon">Coming soon</string>
     <!-- Issue #167: the Chores bottom-nav tab's "due now" badge, announced to accessibility
          services since the numeral alone isn't otherwise labeled. -->
@@ -87,6 +91,8 @@
     <string name="search_chores_label">Search chores</string>
     <!-- Issue #69: content description for the search field's trailing clear button. -->
     <string name="clear_search">Clear search</string>
+    <!-- Issue #180: content description for the collapsible search field's back/collapse icon. -->
+    <string name="collapse_search">Collapse search</string>
     <string name="filters_title">Filters</string>
     <string name="apply">Apply</string>
     <string name="clear_filters">Clear filters</string>

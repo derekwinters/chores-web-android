@@ -44,7 +44,10 @@ class ChoresAppTest {
         username: String = "alice",
         onLogout: () -> Unit = {},
         dueNowCount: Int = 0,
-        currentTitleProvider: @Composable () -> String? = { "Test Household" }
+        currentTitleProvider: @Composable () -> String? = { "Test Household" },
+        // Issue #180: real ChoreFormScreen is Hilt-wired, so tests exercising the new top-bar
+        // Add-Chore action's navigation need a fake here, same as every other content slot.
+        choreFormContent: @Composable (onDone: () -> Unit) -> Unit = { Text("Fake Chore Form") }
     ) {
         composeTestRule.setContent {
             ChoresAppContent(
@@ -53,6 +56,7 @@ class ChoresAppTest {
                 loginContent = { Text("Fake Login") },
                 dashboardContent = { Text("Fake Dashboard") },
                 choresContent = { _, _, _ -> Text("Fake Chores") },
+                choreFormContent = choreFormContent,
                 userDetailContent = { Text("Fake User Detail") },
                 logContent = { Text("Fake Log") },
                 usersContent = { Text("Fake Users") },
@@ -247,26 +251,31 @@ class ChoresAppTest {
     }
 
     @Test
-    fun choresApp_userMenu_offersOnlyLogout() {
+    fun choresApp_userMenu_offersSignedInAsHeaderAndLogoutOnly() {
         // Issue #167: the avatar dropdown shrinks to identity + logout only -- Preferences and
         // Settings are reachable via the bottom nav now. "Settings" text still exists once (the
         // bottom-nav tab label), so this asserts the dropdown doesn't add a second occurrence
-        // rather than asserting global absence.
-        setContent(isAdmin = true)
+        // rather than asserting global absence. Issue #180: identity is now the "Signed in as"
+        // header (the username moved out of the always-visible top bar into here).
+        setContent(isAdmin = true, username = "alice")
 
         composeTestRule.onNodeWithTag("userMenuTrigger").performClick()
 
+        composeTestRule.onNodeWithText("Signed in as alice").assertExists()
         composeTestRule.onNodeWithText("Logout").assertExists()
         composeTestRule.onNodeWithText("Preferences").assertDoesNotExist()
         composeTestRule.onAllNodesWithText("Settings").assertCountEquals(1)
     }
 
     @Test
-    fun choresApp_topBar_showsAvatarInitialAndUserName() {
+    fun choresApp_topBar_showsAvatarInitialOnly_usernameMovedIntoDropdown() {
+        // Issue #180: navigationIcon is sized for a single compact icon, not icon+text -- the
+        // avatar circle alone is now always visible in the top bar; the username itself only
+        // appears once the dropdown is opened (see choresApp_userMenu_offersSignedInAsHeaderAndLogoutOnly).
         setContent(username = "alice")
 
         composeTestRule.onNodeWithText("A").assertExists()
-        composeTestRule.onNodeWithText("alice").assertExists()
+        composeTestRule.onNodeWithText("alice").assertDoesNotExist()
     }
 
     @Test
@@ -292,5 +301,61 @@ class ChoresAppTest {
         setContent(currentTitleProvider = { null })
 
         composeTestRule.onNodeWithTag("appTitleBranding").assertTextEquals("Chores")
+    }
+
+    @Test
+    fun choresApp_topBar_addChoreAction_hiddenOnDashboard() {
+        // Issue #180: the top bar is shared across every screen, so the Add-Chore action must not
+        // render on the Dashboard start destination.
+        setContent()
+
+        composeTestRule.onNodeWithContentDescription("Add Chore").assertDoesNotExist()
+    }
+
+    @Test
+    fun choresApp_topBar_addChoreAction_visibleOnChoresScreen() {
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_chores").performClick()
+
+        composeTestRule.onNodeWithContentDescription("Add Chore").assertExists()
+    }
+
+    @Test
+    fun choresApp_topBar_addChoreAction_navigatesDirectlyToChoreForm() {
+        // Issue #180: navController is already in scope in ChoresAuthenticatedScaffold, so the
+        // top-bar plus icon calls navController.navigate("chores/new") directly -- no callback
+        // threading through ChoresNavActions.
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_chores").performClick()
+        composeTestRule.onNodeWithContentDescription("Add Chore").performClick()
+
+        composeTestRule.onNodeWithText("Fake Chore Form").assertExists()
+    }
+
+    @Test
+    fun choresApp_topBar_addChoreAction_hiddenOnChoreFormScreenItself() {
+        // Regression test for the visibility bug caught during grilling: the existing isCurrent()
+        // prefix-match helper (used for bottom-nav highlighting) would incorrectly also match
+        // "chores/new" since it starts with "chores" -- the Add-Chore action must use an exact
+        // route match instead, so it disappears once already on the create-chore screen.
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_chores").performClick()
+        composeTestRule.onNodeWithContentDescription("Add Chore").performClick()
+
+        composeTestRule.onNodeWithContentDescription("Add Chore").assertDoesNotExist()
+    }
+
+    @Test
+    fun choresApp_topBar_addChoreAction_hiddenOnOtherTopLevelScreens() {
+        setContent(isAdmin = true)
+
+        composeTestRule.onNodeWithTag("navItem_users").performClick()
+        composeTestRule.onNodeWithContentDescription("Add Chore").assertDoesNotExist()
+
+        composeTestRule.onNodeWithTag("navItem_settings").performClick()
+        composeTestRule.onNodeWithContentDescription("Add Chore").assertDoesNotExist()
     }
 }
