@@ -1,12 +1,5 @@
 <resources>
     <string name="app_name">Chores</string>
-    <string name="nav_notification">Notification</string>
-    <string name="notification_screen_title">Notifications</string>
-    <string name="send_test_notification">Send Test Notification</string>
-    <string name="notification_channel_name">Test Notifications</string>
-    <string name="notification_channel_description">Channel used for test notifications triggered from the Notification screen</string>
-    <string name="test_notification_title">Test Notification</string>
-    <string name="test_notification_body">This is a test notification from Chores.</string>
 
     <!-- Navigation shell (issue #10). Issue #60: labels "Board"/"Log" match web's PAGES copy
          (App.jsx lines 30-35) rather than "Dashboard"/"Activity Log". -->
@@ -20,6 +13,9 @@
     <string name="nav_settings">Settings</string>
     <string name="nav_preferences">Preferences</string>
     <string name="open_navigation_menu">Open navigation menu</string>
+    <!-- Issue #145: the hamburger icon toggles an expandable panel; the content description
+         reflects whether tapping it will open or close that panel. -->
+    <string name="close_navigation_menu">Close navigation menu</string>
     <string name="user_menu">User menu</string>
     <string name="logout">Logout</string>
     <string name="coming_soon">Coming soon</string>
@@ -82,6 +78,9 @@
     <string name="chore_detail_frequency_label">Frequency</string>
     <string name="chore_detail_points_label">Points</string>
     <string name="chore_detail_assignee_label">Assignee</string>
+    <!-- Issue #162: the expanded detail's Assignee cell fallback for chores with no fixed
+         current assignee — next-in-rotation for rotating chores, else this ("open" chores). -->
+    <string name="chore_assignee_anyone_label">Anyone</string>
 
     <!-- Chores screen: search, filters, sorting (issue #13) -->
     <string name="search_chores_label">Search chores</string>
@@ -91,6 +90,13 @@
     <string name="apply">Apply</string>
     <string name="clear_filters">Clear filters</string>
     <string name="showing_n_of_m_chores">Showing %1$d of %2$d chores</string>
+
+    <!-- Issue #162: top-of-list filter icon row, one icon per filter group plus an overflow icon
+         opening the full filters dialog (schedule type, assignment type, enabled status). -->
+    <string name="filter_assignee_label">Filter by assignee</string>
+    <string name="filter_state_label">Filter by status</string>
+    <string name="filter_due_within_label">Filter by due date</string>
+    <string name="filter_more_label">More filters</string>
     <string name="filter_assignee">Assignee</string>
     <string name="filter_state">State</string>
     <string name="filter_state_all">All</string>

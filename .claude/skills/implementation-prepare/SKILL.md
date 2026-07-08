@@ -10,24 +10,29 @@ Prepares git branch and environment for issue implementation.
 ## Usage
 
 ```
-/implementation-prepare <issue-number> <commit-type>
+/implementation-prepare <issue-number> <commit-type> <branch>
 ```
 
 ## Workflow
 
 1. **Fetch main branch**: `git fetch origin && git checkout main && git pull origin main`
-2. **Create feature branch**: `git checkout -b <type>-issue-<number>`
-3. **Verify branch created**: `git branch --show-current`
+2. **Checkout the given branch**:
+   - If `<branch>` already exists locally or on `origin`, check it out (`git checkout <branch>` / `git checkout -b <branch> origin/<branch>`) — this is the shared-branch case (e.g. milestone mode).
+   - Otherwise, create it fresh from updated `main`: `git checkout -b <branch>`.
+3. **Verify branch is current**: `git branch --show-current`
 4. **Report status**: Show branch name and readiness
 
 ## Parameters
 
 - `issue_number` (required): GitHub issue number
 - `commit_type` (required): Type of commit (feat, fix, refactor, docs, test)
+- `branch` (required): The exact branch name to prepare. This skill never invents or derives a branch name — the caller always supplies one explicitly.
+  - Standalone invocation: caller passes a self-chosen name (e.g. `<type>-issue-<number>`).
+  - Milestone-mode invocation: caller passes the shared milestone branch (e.g. `claude/milestone-<number>-<randomid>`), owned and created by the milestone orchestrator.
 
 ## Output
 
-- Branch name created: `<type>-issue-<number>`
+- Branch name checked out/created: `<branch>`
 - Branch status: Active and ready for implementation
 - Next step: Begin implementation
 
@@ -35,4 +40,5 @@ Prepares git branch and environment for issue implementation.
 
 - Called by orchestrator after validation
 - Can be called independently to prepare a branch
-- Fails if branch already exists locally
+- Never composes a branch name itself — `<branch>` is always caller-supplied
+- Idempotent for the shared-branch case: re-checking-out an existing branch is not a failure

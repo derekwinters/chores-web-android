@@ -19,13 +19,13 @@ START
   ↓
 [1] validate
   ├─ Call: /implementation-validate <issue-number>
-  ├─ Checks: ready-for-work label, grilling comment, OPEN state, milestone
+  ├─ Checks: ready-for-work label, grilling comment, OPEN state, milestone, branch input present
   ├─ Action: swap ready-for-work → in-development
-  └─ Result: PASS → Continue, ABORT if grilling comment missing or any check fails
+  └─ Result: PASS → Continue, ABORT if grilling comment missing, any check fails, or `branch` is absent
           ↓
 [2] prepare
-  ├─ Call: /implementation-prepare <issue-number> <commit-type>
-  ├─ Creates: <type>-issue-<number> branch from updated main
+  ├─ Call: /implementation-prepare <issue-number> <commit-type> <branch>
+  ├─ Checks out/creates: the given `<branch>` from updated main (never self-invented)
   └─ Result: Branch ready
           ↓
 [3] doc-pre
@@ -145,7 +145,7 @@ The TDD loop is the core of the implementation stage. It runs fully autonomously
 ## State Persistence
 
 ```
-Branch: <type>-issue-<number>
+Branch: <branch> (caller-supplied — see Input)
 Current step: tracked by git log and git status
 Modified files: tracked via git
 Deviations: noted in agent context
@@ -157,6 +157,8 @@ Resumable by checking branch state and git log.
 
 ### Input
 - `issue_number` (GitHub issue #)
+- `branch` (required) — the exact branch to work on. Never invented or derived by this agent; standalone callers must supply one (e.g. `<type>-issue-<number>`), milestone-mode callers supply the shared milestone branch. Missing `branch` → ABORT at validate.
+- `existing_pr` (optional) — milestone mode only. When present, state [10] skips push+PR creation and does not modify the PR body (the milestone orchestrator owns it exclusively); this agent only reports its summary back.
 
 ### Output
 - Fully implemented issue with:
@@ -184,6 +186,7 @@ Resumable by checking branch state and git log.
 - Invalid issue number → error message
 - Missing `ready-for-work` label → ABORT
 - Missing grilling comment → ABORT with instruction to run `/grill-with-docs issue <N>` first
+- Missing `branch` input → ABORT — this agent never invents a branch name
 - Issue already closed → ABORT
 - Test failures → PAUSE, show errors, return to TDD loop
 - Build failures → PAUSE, show errors
@@ -230,7 +233,7 @@ Resumable by checking branch state and git log.
 ## Notes
 
 - Agent idempotent: safe to re-run from failed state
-- All git operations happen on isolated `<type>-issue-<number>` branch
+- All git operations happen on the caller-supplied `branch` — isolated `<type>-issue-<number>` in standalone mode, or the shared milestone branch in milestone mode
 - Tests must pass before user review pause
 - User has final approval before code commit and push
 - PR auto-closes issue when merged

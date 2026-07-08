@@ -7,7 +7,8 @@ Steps:
 2. Validate state:
    - Check: issue is OPEN (not CLOSED or DRAFT)
    - Check: has "ready-for-work" label
-   - Check: does NOT have implementation branch already (git branch -a | grep "<type>-issue-<number>")
+   - Check: does NOT already have an active implementation branch for this issue (git branch -a | grep "issue-<number>")
+   - Check: caller supplied a `branch` input (validated by the invoking orchestrator; a missing branch is an ABORT there, not a state this skill fetches from GitHub)
 3. Analyze issue to determine commit type:
    - feat: if new feature/enhancement
    - fix: if bug fix

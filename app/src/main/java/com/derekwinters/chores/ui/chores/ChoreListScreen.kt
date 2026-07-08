@@ -1,34 +1,40 @@
 package com.derekwinters.chores.ui.chores
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -155,59 +162,64 @@ fun ChoreListContent(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            statsPanel()
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                modifier = Modifier.weight(1f),
-                value = filters.query,
-                onValueChange = onQueryChange,
-                label = { Text(stringResource(R.string.search_chores_label)) },
-                singleLine = true,
-                // Issue #69: leading search icon + trailing clear ("x") button, matching web's
-                // search field.
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (filters.query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.clear_search))
+            // Issue #162: search field stays at the top, matching mobile web.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier.weight(1f),
+                    value = filters.query,
+                    onValueChange = onQueryChange,
+                    label = { Text(stringResource(R.string.search_chores_label)) },
+                    singleLine = true,
+                    // Issue #69: leading search icon + trailing clear ("x") button, matching web's
+                    // search field.
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (filters.query.isNotEmpty()) {
+                            IconButton(onClick = { onQueryChange("") }) {
+                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.clear_search))
+                            }
                         }
                     }
-                }
-            )
-            // Issue #72: visible text label alongside the filter toggle's icon (previously
-            // icon-only), matching web's affordance.
-            TextButton(onClick = { showFiltersDialog = true }) {
-                Icon(Icons.Filled.FilterList, contentDescription = null)
-                Text(
-                    modifier = Modifier.padding(start = 4.dp),
-                    text = stringResource(R.string.filters_title)
                 )
             }
-        }
 
-        // Issue #74: "Showing N of M chores" is now always visible (previously hidden unless
-        // filters were active), matching web's always-visible count. "Clear filters" remains
-        // conditional -- it wouldn't make sense to offer clearing filters that aren't active.
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val visibleCount = (uiState as? UiState.Success)?.data?.size ?: 0
-            Text(
-                text = stringResource(R.string.showing_n_of_m_chores, visibleCount, totalCount),
-                style = MaterialTheme.typography.bodySmall
+            // Issue #162: compact row of flat filter icon buttons (Assignee, Status, Due-within)
+            // plus an overflow "Tune" icon for the remaining groups (schedule type, assignment
+            // type, enabled status) -- replaces the single "Filters" text button, matching mobile
+            // web's top filter icon row.
+            ChoreFilterIconRow(
+                filters = filters,
+                availableAssignees = availableAssignees,
+                onFiltersChange = onFiltersChange,
+                onMoreFiltersClick = { showFiltersDialog = true }
             )
-            if (filters.isActive) {
-                TextButton(onClick = { onFiltersChange(ChoreFilters()) }) {
-                    Text(stringResource(R.string.clear_filters))
+
+            // Issue #162: stats moved below the filter row and collapsed by default (see
+            // ChoresStatsPanelContent's initiallyExpanded default), matching mobile web's layout.
+            statsPanel()
+
+            // Issue #74: "Showing N of M chores" is now always visible (previously hidden unless
+            // filters were active), matching web's always-visible count. "Clear filters" remains
+            // conditional -- it wouldn't make sense to offer clearing filters that aren't active.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val visibleCount = (uiState as? UiState.Success)?.data?.size ?: 0
+                Text(
+                    text = stringResource(R.string.showing_n_of_m_chores, visibleCount, totalCount),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                if (filters.isActive) {
+                    TextButton(onClick = { onFiltersChange(ChoreFilters()) }) {
+                        Text(stringResource(R.string.clear_filters))
+                    }
                 }
             }
-        }
 
         // Issue #74 CI fix: real (not contentPadding) bottom padding matching the Add-Chore FAB's
         // fixed footprint (56.dp ExtendedFloatingActionButton + 16.dp align/padding inset, plus
@@ -379,44 +391,61 @@ private fun ChoreRow(
             if (expanded) {
                 ChoreDetailSection(chore = chore)
 
+                // Issue #162: simple flat icon buttons instead of text chips, matching mobile
+                // web's icon-button treatment -- not full-color emoji icons, plain Material
+                // symbols with a contentDescription each (existing show/hide logic unchanged).
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     if (isCompleting || isPendingAction) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
                     } else {
                         if (chore.isDue) {
-                            // Issue #93 (step 2 of 3): success/green content color, sourced from
-                            // the theme's success color (no first-class Material3 ColorScheme
-                            // slot -- same LocalThemeOption pattern as Dashboard's trend coloring,
-                            // issue #120), falling back to colorScheme.primary if no theme has
-                            // resolved yet.
+                            // Issue #93/#162: success/green tint, sourced from the theme's
+                            // success color (no first-class Material3 ColorScheme slot -- same
+                            // LocalThemeOption pattern as Dashboard's trend coloring, issue #120),
+                            // falling back to colorScheme.primary if no theme has resolved yet.
                             val themeOption = LocalThemeOption.current
-                            ChoreActionButton(
+                            ChoreActionIconButton(
                                 onClick = onCompleteClick,
-                                text = stringResource(R.string.complete_chore_button),
-                                contentColor = themeOption?.success?.let(::parseHexColor) ?: MaterialTheme.colorScheme.primary
+                                icon = Icons.Filled.CheckCircle,
+                                contentDescription = stringResource(R.string.complete_chore_button),
+                                tint = themeOption?.success?.let(::parseHexColor) ?: MaterialTheme.colorScheme.primary
                             )
-                            ChoreActionButton(onClick = onSkip, text = stringResource(R.string.chore_skip_action))
+                            ChoreActionIconButton(
+                                onClick = onSkip,
+                                icon = Icons.Filled.SkipNext,
+                                contentDescription = stringResource(R.string.chore_skip_action)
+                            )
                         } else {
-                            ChoreActionButton(onClick = onMarkDue, text = stringResource(R.string.chore_mark_due_action))
+                            ChoreActionIconButton(
+                                onClick = onMarkDue,
+                                icon = Icons.Filled.NotificationsActive,
+                                contentDescription = stringResource(R.string.chore_mark_due_action)
+                            )
                         }
-                        ChoreActionButton(onClick = onEdit, text = stringResource(R.string.chore_edit_action))
-                        ChoreActionButton(onClick = onHistory, text = stringResource(R.string.chore_history_action))
-                        // Issue #93 (step 3 of 3): Delete as an equal-width outlined chip with
-                        // red/error content color, same LocalThemeOption pattern as Complete
-                        // (step 2). This is the one button whose onClick mutates ChoreRow's own
+                        ChoreActionIconButton(
+                            onClick = onEdit,
+                            icon = Icons.Filled.Edit,
+                            contentDescription = stringResource(R.string.chore_edit_action)
+                        )
+                        ChoreActionIconButton(
+                            onClick = onHistory,
+                            icon = Icons.Filled.History,
+                            contentDescription = stringResource(R.string.chore_history_action)
+                        )
+                        // Issue #93/#162: red/error tint, same LocalThemeOption pattern as
+                        // Complete. This is the one button whose onClick mutates ChoreRow's own
                         // local `remember` state to conditionally render an AlertDialog -- the
-                        // exact shape that broke every prior attempt at this file, so it is
-                        // isolated as its own verified step per the issue's rollout plan. If this
-                        // breaks choreListContent_deleteAction_requiresConfirmation, the documented
-                        // fallback is a plain red TextButton (still weight(1f)-free, no outline).
+                        // exact shape that broke every prior attempt at this file, so it stays
+                        // isolated per the issue #93 rollout plan.
                         val deleteThemeOption = LocalThemeOption.current
-                        ChoreActionButton(
+                        ChoreActionIconButton(
                             onClick = onDeleteClick,
-                            text = stringResource(R.string.chore_delete_action),
-                            contentColor = deleteThemeOption?.error?.let(::parseHexColor) ?: MaterialTheme.colorScheme.error
+                            icon = Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.chore_delete_action),
+                            tint = deleteThemeOption?.error?.let(::parseHexColor) ?: MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -426,30 +455,22 @@ private fun ChoreRow(
 }
 
 /**
- * Issue #93 (step 1 of 3): equal-width outlined chip button for the expanded row's action row --
- * matches `ChoreCard.css`'s `.action-btn`. Rolled out first for Skip/Edit/History/Mark-Due-Now
- * only (each routes through an external callback parameter with no local state), per this issue's
- * incremental-rollout plan; Complete and Delete land in their own follow-up commits.
+ * Issue #162: simple flat icon button for the expanded row's action row -- matches
+ * `ChoreCard.css`'s `.action-btn` in spirit (equal-weight action affordances) but as a plain
+ * Material icon rather than a text chip. Default tint is onSurfaceVariant; Complete/Delete pass
+ * their semantic success/error [tint]. Every icon carries a [contentDescription] for
+ * accessibility -- there is no visible text.
  */
 @Composable
-private fun RowScope.ChoreActionButton(
+private fun ChoreActionIconButton(
     onClick: () -> Unit,
-    text: String,
+    icon: ImageVector,
+    contentDescription: String,
     modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        // Modifier.weight() is a RowScope extension -- ChoreActionButton is only ever called
-        // from within the expanded row's action-buttons Row, so it takes a RowScope receiver
-        // itself instead of accepting a plain Modifier and calling weight() on it (which doesn't
-        // resolve outside a Row/ColumnScope receiver).
-        modifier = modifier.weight(1f),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
-    ) {
-        Text(text)
+    IconButton(onClick = onClick, modifier = modifier) {
+        Icon(imageVector = icon, contentDescription = contentDescription, tint = tint)
     }
 }
 
@@ -510,7 +531,13 @@ private fun ChoreDetailSection(chore: Chore) {
             ChoreMetaItem(
                 modifier = Modifier.fillMaxWidth(0.5f),
                 label = stringResource(R.string.chore_detail_assignee_label),
-                value = chore.currentAssignee ?: stringResource(R.string.chore_completer_label)
+                // Issue #162: the mobile app was showing the static "Completer" label for every
+                // open/rotating chore -- "Completer" is a completion-time concept, not an
+                // assignee value. Now: currentAssignee when set; else next-in-rotation for
+                // rotating chores; else "Anyone" for open chores.
+                value = chore.currentAssignee
+                    ?: chore.nextAssignee?.takeIf { chore.assignmentType == "rotating" }
+                    ?: stringResource(R.string.chore_assignee_anyone_label)
             )
         }
         HorizontalDivider()
@@ -534,5 +561,150 @@ private fun ChoreMetaItem(label: String, value: String, modifier: Modifier = Mod
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+/**
+ * Issue #162: compact row of flat icon buttons at the top of the chore list content, one per
+ * filter group (Assignee, State, Due-within) plus an overflow "Tune" icon opening the existing
+ * [ChoreFiltersDialog] for the remaining groups (enabled status, schedule type, assignment type).
+ * A group's icon is tinted primary when that group holds a non-default value, so active filters
+ * are visible at a glance without opening any menu. The underlying [ChoreFilters] model and
+ * [onFiltersChange] contract are unchanged -- this only changes how filters are edited.
+ */
+@Composable
+private fun ChoreFilterIconRow(
+    filters: ChoreFilters,
+    availableAssignees: List<String>,
+    onFiltersChange: (ChoreFilters) -> Unit,
+    onMoreFiltersClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var assigneeMenuExpanded by remember { mutableStateOf(false) }
+    var stateMenuExpanded by remember { mutableStateOf(false) }
+    var dueWithinMenuExpanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box {
+            FilterGroupIconButton(
+                icon = Icons.Filled.Person,
+                contentDescription = stringResource(R.string.filter_assignee_label),
+                active = filters.assignees.isNotEmpty(),
+                onClick = { assigneeMenuExpanded = true }
+            )
+            DropdownMenu(expanded = assigneeMenuExpanded, onDismissRequest = { assigneeMenuExpanded = false }) {
+                if (availableAssignees.isEmpty()) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.filter_assignee)) }, onClick = {})
+                }
+                // Multi-select: stays open across taps (only closes via outside-tap/dismiss) so
+                // several assignees can be toggled in one go, matching a filter checklist.
+                availableAssignees.forEach { assignee ->
+                    val checked = assignee in filters.assignees
+                    DropdownMenuItem(
+                        text = { Text(assignee) },
+                        leadingIcon = if (checked) {
+                            { Icon(Icons.Filled.CheckCircle, contentDescription = null) }
+                        } else {
+                            null
+                        },
+                        onClick = {
+                            onFiltersChange(
+                                filters.copy(
+                                    assignees = if (checked) filters.assignees - assignee else filters.assignees + assignee
+                                )
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        Box {
+            FilterGroupIconButton(
+                icon = Icons.Filled.CheckCircle,
+                contentDescription = stringResource(R.string.filter_state_label),
+                active = filters.state != ChoreStateFilter.ALL,
+                onClick = { stateMenuExpanded = true }
+            )
+            DropdownMenu(expanded = stateMenuExpanded, onDismissRequest = { stateMenuExpanded = false }) {
+                val options = listOf(
+                    ChoreStateFilter.ALL to stringResource(R.string.filter_state_all),
+                    ChoreStateFilter.DUE to stringResource(R.string.filter_state_due),
+                    ChoreStateFilter.COMPLETE to stringResource(R.string.filter_state_complete)
+                )
+                options.forEach { (value, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            onFiltersChange(filters.copy(state = value))
+                            stateMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Box {
+            FilterGroupIconButton(
+                icon = Icons.Filled.Schedule,
+                contentDescription = stringResource(R.string.filter_due_within_label),
+                active = filters.dueWithin != DueWithinFilter.ALL,
+                onClick = { dueWithinMenuExpanded = true }
+            )
+            DropdownMenu(expanded = dueWithinMenuExpanded, onDismissRequest = { dueWithinMenuExpanded = false }) {
+                val options = listOf(
+                    DueWithinFilter.ALL to stringResource(R.string.due_within_all),
+                    DueWithinFilter.TODAY to stringResource(R.string.due_within_today),
+                    DueWithinFilter.NEXT_3_DAYS to stringResource(R.string.due_within_3_days),
+                    DueWithinFilter.NEXT_7_DAYS to stringResource(R.string.due_within_7_days),
+                    DueWithinFilter.NEXT_30_DAYS to stringResource(R.string.due_within_30_days)
+                )
+                options.forEach { (value, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            onFiltersChange(filters.copy(dueWithin = value))
+                            dueWithinMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // Overflow: schedule type, assignment type, and enabled status don't get their own
+        // top-level icon -- they stay behind the full ChoreFiltersDialog, same as this icon also
+        // duplicating the three groups above for anyone who prefers the full dialog.
+        FilterGroupIconButton(
+            icon = Icons.Filled.Tune,
+            contentDescription = stringResource(R.string.filter_more_label),
+            active = filters.scheduleType != null || filters.assignmentType != null || filters.enabledFilter != EnabledFilter.ALL,
+            onClick = onMoreFiltersClick
+        )
+    }
+}
+
+@Composable
+private fun FilterGroupIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    active: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(onClick = onClick, modifier = modifier) {
+        if (active) {
+            BadgedBox(badge = { Badge() }) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        } else {
+            Icon(imageVector = icon, contentDescription = contentDescription)
+        }
     }
 }

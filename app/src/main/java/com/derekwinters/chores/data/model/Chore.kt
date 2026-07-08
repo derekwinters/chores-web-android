@@ -10,9 +10,10 @@ import com.derekwinters.chores.data.network.dto.ScheduleConfig
  * constraint fields the Chores screen's filters, stats panel, card detail, and create/edit form
  * need).
  *
- * `currentAssignee == null` means the chore has no fixed assignee — the chore list shows the
- * "Completer" placeholder for it, and completing it requires picking a Completer from
- * [eligiblePeople] (see CompleterPickerDialog).
+ * `currentAssignee == null` means the chore has no fixed assignee — the chore list's Assignee
+ * cell shows [nextAssignee] for rotating chores, else "Anyone" (issue #162: never the static
+ * "Completer" placeholder, which is a completion-time concept — see CompleterPickerDialog).
+ * Completing such a chore requires picking a Completer from [eligiblePeople].
  *
  * There is no separate "rotation list" concept in the real backend: [eligiblePeople] doubles as
  * both the "open" assignment type's eligible-to-complete pool and the "rotating" type's rotation

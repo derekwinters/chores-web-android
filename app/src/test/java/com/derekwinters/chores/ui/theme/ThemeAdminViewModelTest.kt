@@ -1,6 +1,8 @@
 package com.derekwinters.chores.ui.theme
 
 import com.derekwinters.chores.MainDispatcherRule
+import com.derekwinters.chores.data.auth.FakeCredentialStore
+import com.derekwinters.chores.data.auth.SessionManager
 import com.derekwinters.chores.data.network.FakeChoresApi
 import com.derekwinters.chores.data.network.dto.ThemeColorsDto
 import com.derekwinters.chores.data.network.dto.ThemeDto
@@ -13,6 +15,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+
+/** Issue #156: [ThemeRepository] now depends on [SessionManager] to drive its shared
+ *  [ThemeRepository.resolvedTheme] flow; these tests don't exercise that flow directly, so an
+ *  unauthenticated fake session is enough. */
+private fun themeRepository(api: FakeChoresApi) = ThemeRepository(api, SessionManager(FakeCredentialStore()))
 
 private fun themeColorsDto() = ThemeColorsDto(
     bg = "#000000",
@@ -37,7 +44,7 @@ class ThemeAdminViewModelTest {
     @Test
     fun load_populatesThemes() = runTest(mainDispatcherRule.testDispatcher) {
         val api = FakeChoresApi(themesResult = listOf(themeDto("1", "Dark")))
-        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        val viewModel = ThemeAdminViewModel(themeRepository(api))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -49,7 +56,7 @@ class ThemeAdminViewModelTest {
     fun createTheme_success_reloadsList() = runTest(mainDispatcherRule.testDispatcher) {
         val sourceTheme = themeDto("1", "Dark").toDomain()
         val api = FakeChoresApi(saveThemeResult = themeDto("2", "My Theme"))
-        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        val viewModel = ThemeAdminViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.createTheme("My Theme", sourceTheme)
@@ -63,7 +70,7 @@ class ThemeAdminViewModelTest {
     @Test
     fun renameTheme_success_reloadsList() = runTest(mainDispatcherRule.testDispatcher) {
         val api = FakeChoresApi(renameThemeResult = themeDto("2", "Renamed"))
-        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        val viewModel = ThemeAdminViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.renameTheme("2", "Renamed")
@@ -78,7 +85,7 @@ class ThemeAdminViewModelTest {
     fun updateColors_success_sendsFullPaletteWithoutName() = runTest(mainDispatcherRule.testDispatcher) {
         val editedTheme = themeDto("2", "My Theme").toDomain().copy(primary = "#ABCDEF")
         val api = FakeChoresApi(updateThemeResult = themeDto("2", "My Theme"))
-        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        val viewModel = ThemeAdminViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.updateColors("2", editedTheme)
@@ -95,7 +102,7 @@ class ThemeAdminViewModelTest {
     @Test
     fun setDefaultTheme_callsRepository() = runTest(mainDispatcherRule.testDispatcher) {
         val api = FakeChoresApi(setDefaultThemeResult = themeDto("1", "Dark"))
-        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        val viewModel = ThemeAdminViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.setDefaultTheme("1")
@@ -107,7 +114,7 @@ class ThemeAdminViewModelTest {
     @Test
     fun deleteTheme_success_reloadsList() = runTest(mainDispatcherRule.testDispatcher) {
         val api = FakeChoresApi()
-        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        val viewModel = ThemeAdminViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.deleteTheme("2")

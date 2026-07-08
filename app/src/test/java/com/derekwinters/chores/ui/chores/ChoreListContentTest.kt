@@ -69,8 +69,10 @@ class ChoreListContentTest {
     }
 
     @Test
-    fun choreListContent_filterToggle_showsTextLabel() {
-        // Issue #72: visible text label ("Filters") alongside the filter toggle's icon.
+    fun choreListContent_filterIconRow_showsOneIconPerGroupPlusOverflow() {
+        // Issue #162: the "Filters" text button is replaced by a compact row of per-group filter
+        // icons (Assignee, Status, Due-within) plus an overflow "More filters" icon that opens
+        // the full ChoreFiltersDialog.
         composeTestRule.setContent {
             ChoreListContent(
                 uiState = UiState.Success(listOf(assignedChore)),
@@ -79,7 +81,26 @@ class ChoreListContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Filters", useUnmergedTree = true).assertExists()
+        composeTestRule.onNodeWithContentDescription("Filter by assignee").assertExists()
+        composeTestRule.onNodeWithContentDescription("Filter by status").assertExists()
+        composeTestRule.onNodeWithContentDescription("Filter by due date").assertExists()
+        composeTestRule.onNodeWithContentDescription("More filters").assertExists()
+    }
+
+    @Test
+    fun choreListContent_moreFiltersIcon_opensFullFiltersDialog() {
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(assignedChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More filters").performClick()
+
+        // ChoreFiltersDialog's AlertDialog title reuses R.string.filters_title ("Filters").
+        composeTestRule.onNodeWithText("Filters").assertExists()
     }
 
     @Test
@@ -129,11 +150,13 @@ class ChoreListContentTest {
             )
         }
 
+        // Issue #162: "Completer" is a completion-time concept and must never appear as an
+        // assignee value (collapsed or expanded) -- see the next test for the expanded fallback.
         composeTestRule.onNodeWithText("Completer").assertDoesNotExist()
     }
 
     @Test
-    fun choreListContent_unassignedChore_expandedShowsCompleterPlaceholder() {
+    fun choreListContent_unassignedChore_expandedShowsAnyonePlaceholder() {
         composeTestRule.setContent {
             ChoreListContent(
                 uiState = UiState.Success(listOf(unassignedChore)),
@@ -144,9 +167,34 @@ class ChoreListContentTest {
 
         composeTestRule.onNodeWithText("Trash").performClick()
 
-        // Issue #87: label/value are separate Text nodes now ("ASSIGNEE" label + "Completer" value).
+        // Issue #162: open chores (no fixed assignee, no rotation) show "Anyone" instead of the
+        // old static "Completer" placeholder -- "Completer" is a completion-time concept.
         composeTestRule.onNodeWithText("ASSIGNEE").assertExists()
-        composeTestRule.onNodeWithText("Completer").assertExists()
+        composeTestRule.onNodeWithText("Anyone").assertExists()
+        composeTestRule.onNodeWithText("Completer").assertDoesNotExist()
+    }
+
+    @Test
+    fun choreListContent_rotatingChoreWithNoCurrentAssignee_expandedShowsNextAssignee() {
+        // Issue #162: rotating chores fall back to the server-computed next-in-rotation assignee
+        // rather than "Anyone" (which is reserved for genuinely open/anyone-can-do chores).
+        val rotatingChore = unassignedChore.copy(
+            id = 3,
+            name = "Vacuum",
+            assignmentType = "rotating",
+            nextAssignee = "carol"
+        )
+        composeTestRule.setContent {
+            ChoreListContent(
+                uiState = UiState.Success(listOf(rotatingChore)),
+                completingChoreId = null,
+                onComplete = { _, _ -> }
+            )
+        }
+
+        composeTestRule.onNodeWithText("Vacuum").performClick()
+
+        composeTestRule.onNodeWithText("carol").assertExists()
     }
 
     @Test
@@ -165,7 +213,7 @@ class ChoreListContentTest {
         // Add-Chore FAB's carved-out bottom padding is applied; performScrollTo() is a safe
         // no-op when the node is already fully visible, so it's applied consistently to every
         // expanded-row button click in this file rather than only the ones observed to need it.
-        composeTestRule.onNodeWithText("Complete").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Complete").performScrollTo().performClick()
 
         assert(completed == (assignedChore to null))
     }
@@ -182,7 +230,7 @@ class ChoreListContentTest {
         }
 
         composeTestRule.onNodeWithText("Trash").performClick()
-        composeTestRule.onNodeWithText("Complete").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Complete").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Who completed this?").assertExists()
 
         composeTestRule.onNodeWithText("bob").performClick()
@@ -208,7 +256,7 @@ class ChoreListContentTest {
         }
 
         composeTestRule.onNodeWithText("Trash").performClick()
-        composeTestRule.onNodeWithText("Complete").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Complete").performScrollTo().performClick()
         composeTestRule.onNodeWithText("bob").performClick()
         composeTestRule.onNodeWithText("Confirm").performClick()
 
@@ -327,9 +375,9 @@ class ChoreListContentTest {
 
         composeTestRule.onNodeWithText("Dishes").performClick()
 
-        composeTestRule.onNodeWithText("Skip").assertExists()
-        composeTestRule.onNodeWithText("History").assertExists()
-        composeTestRule.onNodeWithText("Mark Due Now").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Skip").assertExists()
+        composeTestRule.onNodeWithContentDescription("History").assertExists()
+        composeTestRule.onNodeWithContentDescription("Mark Due Now").assertDoesNotExist()
     }
 
     @Test
@@ -345,8 +393,8 @@ class ChoreListContentTest {
 
         composeTestRule.onNodeWithText("Dishes").performClick()
 
-        composeTestRule.onNodeWithText("Mark Due Now").assertExists()
-        composeTestRule.onNodeWithText("Skip").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Mark Due Now").assertExists()
+        composeTestRule.onNodeWithContentDescription("Skip").assertDoesNotExist()
     }
 
     @Test
@@ -362,7 +410,7 @@ class ChoreListContentTest {
         }
 
         composeTestRule.onNodeWithText("Dishes").performClick()
-        composeTestRule.onNodeWithText("Skip").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Skip").performScrollTo().performClick()
 
         assert(skipped == assignedChore)
     }
@@ -384,10 +432,13 @@ class ChoreListContentTest {
         // available viewport height; performScrollTo() uses the LazyColumn's contentPadding
         // headroom (see ChoreListContent) to scroll it clear of the FAB's fixed overlap zone
         // before clicking, so the FAB doesn't intercept the touch instead.
-        composeTestRule.onNodeWithText("Delete").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Delete").performScrollTo().performClick()
         composeTestRule.onNodeWithText("This also removes all points history for this chore and cannot be undone.").assertExists()
 
-        composeTestRule.onAllNodesWithText("Delete")[1].performClick()
+        // Issue #162: the row's own Delete action is now an icon (contentDescription "Delete",
+        // clicked above); the confirmation dialog's "Delete" button is text, so it's the only
+        // "Delete"-text node left once the dialog is open.
+        composeTestRule.onNodeWithText("Delete").performClick()
 
         assert(deleted == assignedChore)
     }
@@ -406,7 +457,7 @@ class ChoreListContentTest {
 
         composeTestRule.onNodeWithText("Dishes").performClick()
         // See the Delete test above for why performScrollTo() is needed here.
-        composeTestRule.onNodeWithText("History").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("History").performScrollTo().performClick()
 
         assert(history == assignedChore)
     }

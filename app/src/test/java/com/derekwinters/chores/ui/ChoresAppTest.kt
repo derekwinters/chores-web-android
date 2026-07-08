@@ -42,7 +42,6 @@ class ChoresAppTest {
         composeTestRule.setContent {
             ChoresAppContent(
                 isAuthenticated = isAuthenticated,
-                onSendTestNotification = {},
                 onLogout = onLogout,
                 loginContent = { Text("Fake Login") },
                 dashboardContent = { Text("Fake Dashboard") },
@@ -65,7 +64,6 @@ class ChoresAppTest {
         composeTestRule.setContent {
             ChoresAppContent(
                 isAuthenticated = false,
-                onSendTestNotification = {},
                 loginContent = { Text("Fake Login") },
                 // Issue #62: currentThemeProvider is now invoked before the auth check too (it
                 // wraps loginContent in ChoresTheme), so it needs a non-Hilt fake here same as the
@@ -100,7 +98,6 @@ class ChoresAppTest {
         composeTestRule.setContent {
             ChoresAppContent(
                 isAuthenticated = false,
-                onSendTestNotification = {},
                 loginContent = { observedPrimary = MaterialTheme.colorScheme.primary },
                 currentThemeProvider = { theme }
             )
@@ -128,6 +125,19 @@ class ChoresAppTest {
         // Issue #60: the Dashboard destination's drawer label is "Board", matching web's PAGES copy.
         composeTestRule.onNodeWithText("Board").performClick()
         composeTestRule.onNodeWithText("Fake Dashboard").assertExists()
+    }
+
+    @Test
+    fun choresApp_navPanel_hamburgerTogglesOpenAndClosedContentDescription() {
+        // Issue #145: tapping the hamburger a second time (without navigating anywhere) closes
+        // the panel again, and the content description reflects the open/closed state.
+        setContent()
+
+        composeTestRule.onNodeWithContentDescription("Open navigation menu").performClick()
+        composeTestRule.onNodeWithTag("navItem_chores").assertExists()
+
+        composeTestRule.onNodeWithContentDescription("Close navigation menu").performClick()
+        composeTestRule.onNodeWithTag("navItem_chores").assertDoesNotExist()
     }
 
     @Test

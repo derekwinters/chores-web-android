@@ -1,6 +1,8 @@
 package com.derekwinters.chores.ui.theme
 
 import com.derekwinters.chores.MainDispatcherRule
+import com.derekwinters.chores.data.auth.FakeCredentialStore
+import com.derekwinters.chores.data.auth.SessionManager
 import com.derekwinters.chores.data.network.FakeChoresApi
 import com.derekwinters.chores.data.network.dto.CurrentThemeDto
 import com.derekwinters.chores.data.network.dto.ThemeColorsDto
@@ -15,6 +17,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+
+/** Issue #156: [ThemeRepository] now depends on [SessionManager] to drive its shared
+ *  [ThemeRepository.resolvedTheme] flow; these tests don't exercise that flow directly, so an
+ *  unauthenticated fake session is enough. */
+private fun themeRepository(api: FakeChoresApi) = ThemeRepository(api, SessionManager(FakeCredentialStore()))
 
 private fun themeColorsDto() = ThemeColorsDto(
     bg = "#000000", surface = "#111111", surface2 = "#222222", accent = "#333333",
@@ -39,7 +46,7 @@ class ThemePreferenceViewModelTest {
             currentThemeResult = currentThemeDto("2", "Light", isPersonal = true),
             defaultThemeInfoResult = ThemeDefaultInfoDto(id = "1", name = "Dark")
         )
-        val viewModel = ThemePreferenceViewModel(ThemeRepository(api))
+        val viewModel = ThemePreferenceViewModel(themeRepository(api))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -57,7 +64,7 @@ class ThemePreferenceViewModelTest {
             currentThemeResult = currentThemeDto("1", "Dark"),
             defaultThemeInfoResult = ThemeDefaultInfoDto(id = "1", name = "Dark")
         )
-        val viewModel = ThemePreferenceViewModel(ThemeRepository(api))
+        val viewModel = ThemePreferenceViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.selectTheme(null)
@@ -74,7 +81,7 @@ class ThemePreferenceViewModelTest {
             defaultThemeInfoResult = ThemeDefaultInfoDto(id = "1", name = "Dark"),
             setPersonalThemeResult = themeDto("3", "Pink")
         )
-        val viewModel = ThemePreferenceViewModel(ThemeRepository(api))
+        val viewModel = ThemePreferenceViewModel(themeRepository(api))
         advanceUntilIdle()
 
         viewModel.selectTheme("3")

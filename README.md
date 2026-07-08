@@ -10,7 +10,7 @@ This repo uses four GitHub Actions workflows to build and release the app. All C
 
 | Trigger | Workflow | What it does |
 |---------|----------|---------------|
-| Pull request | `.github/workflows/pr.yml` | Runs `./gradlew test`, builds `assembleDebug`, uploads the APK as a workflow artifact |
+| Pull request | `.github/workflows/pr.yml` | Runs `./gradlew test`, builds `assembleDebug`, uploads the APK as a workflow artifact named `app-debug-<short-sha>` (short SHA of the PR head commit) |
 | Push to `main` | `.github/workflows/release-please.yml` | Runs [Release Please](https://github.com/googleapis/release-please-action) (release-type `simple`) to open/update the release PR and bump the version in `gradle.properties` |
 | Release Please PR | `.github/workflows/release-candidate.yml` | Runs `./gradlew test`, builds `assembleRelease` (debug-signed), uploads the APK as a workflow artifact |
 | Tag push (`v*`, created when a Release Please PR is merged) | `.github/workflows/release.yml` | Builds `assembleRelease` (debug-signed) and attaches the APK to the GitHub Release |

@@ -41,21 +41,18 @@ Success output:
 2. Create conventional commit (same format as above)
 3. Commit: git commit -m "..."
 4. Push to existing branch: git push
-5. Append per-issue summary block to existing PR body:
-   a. Fetch current PR body: gh pr view <existing_pr> --json body -q .body
-   b. Append block:
-      ### Issue #<issue_number>: <issue_title>
-      - Commit: <commit_subject>
-
-      Closes #<issue_number>
-   c. Update PR: gh pr edit <existing_pr> --body "<updated_body>"
-6. Return PR URL
+5. Do NOT touch the PR body — in milestone mode the milestone orchestrator owns the PR body
+   exclusively (full template + Closes list written up front, checkboxes ticked as issues
+   complete). This skill only reports a summary back to its caller.
+6. Return PR URL and a short summary (issue number, title, commit subject) for the milestone
+   orchestrator to use when it ticks the issue's checkbox.
 
 Success output (milestone mode):
-✅ Issue committed and PR updated
+✅ Issue committed, pushed to shared branch
 - Commit: feat: Add flexible skip options for chores (#129)
-- Branch: feat/milestone-1.9.0 (shared)
-- PR URL: https://github.com/derekwinters/chores-web-android-client/pull/168 (updated)
+- Branch: claude/milestone-<number>-<randomid> (shared)
+- PR URL: https://github.com/derekwinters/chores-web-android-client/pull/168 (body unchanged — owned by milestone orchestrator)
+- Summary for caller: Issue #129 — <title> — <commit_subject>
 
 Failure cases:
 - Staging fails: Report git error

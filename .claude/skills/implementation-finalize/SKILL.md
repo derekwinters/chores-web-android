@@ -42,6 +42,10 @@ Closes #<issue-number>
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
+## Milestone Mode
+
+When invoked with `existing_pr` (milestone mode), this skill pushes to the existing shared branch and does **not** create a PR or touch the PR body — the milestone orchestrator owns the PR body exclusively (see `milestone-implementation-orchestrator.md`). It returns a short summary (issue number, title, commit subject) for the orchestrator to use when ticking that issue's checkbox.
+
 ## Notes
 
 - Does NOT stage or commit — commits happen at:
@@ -49,5 +53,5 @@ Closes #<issue-number>
   - after user approval: `feat:/fix:/refactor:` commit for code changes
   - doc-validate stage: `docs:` commit if corrections needed (conditional)
 - PR title must follow conventional commit format
-- "Closes #N" must appear on its own line to trigger GitHub auto-close
-- `in-development` label removed at this step (not at commit time)
+- "Closes #N" must appear on its own line to trigger GitHub auto-close (standalone mode)
+- `in-development` label removed at this step (not at commit time) in standalone mode; in milestone mode the milestone orchestrator removes it after each issue completes

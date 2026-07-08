@@ -32,8 +32,12 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
+      - name: Compute short SHA
+        id: short-sha
+        run: echo "sha=$(echo '${{ github.event.pull_request.head.sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: app-debug-${{ steps.short-sha.outputs.sha }}
           path: app/build/outputs/apk/debug/*.apk

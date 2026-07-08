@@ -54,7 +54,9 @@ fun ChoresStatsPanel(
 fun ChoresStatsPanelContent(
     uiState: UiState<ChoresStats>,
     modifier: Modifier = Modifier,
-    initiallyExpanded: Boolean = true
+    // Issue #162: collapsed by default on the chore list (previously expanded), matching the
+    // mobile-web layout where stats sit below the filter row and start collapsed.
+    initiallyExpanded: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(initiallyExpanded) }
 

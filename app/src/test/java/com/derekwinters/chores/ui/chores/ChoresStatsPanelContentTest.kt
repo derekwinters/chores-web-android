@@ -38,6 +38,17 @@ class ChoresStatsPanelContentTest {
     private val stats = ChoresStats(totalEnabledChores = 5, totalPoints = 27, completedLast7Days = 14, dueNext7DaysPoints = 8)
 
     @Test
+    fun statsPanel_defaultsToCollapsed() {
+        // Issue #162: collapsed by default on the chore list (previously expanded).
+        composeTestRule.setContent {
+            ChoresStatsPanelContent(uiState = UiState.Success(stats))
+        }
+
+        composeTestRule.onNodeWithText("5").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Expand stats panel").assertExists()
+    }
+
+    @Test
     fun statsPanel_expanded_showsAllFourStats() {
         composeTestRule.setContent {
             ChoresStatsPanelContent(uiState = UiState.Success(stats), initiallyExpanded = true)
