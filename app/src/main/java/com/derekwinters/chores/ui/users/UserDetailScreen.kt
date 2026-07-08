@@ -25,6 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.CurrentUser
@@ -87,18 +91,17 @@ fun UserDetailContent(
             )
             is UiState.Success -> {
                 val data = uiState.data
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp).testTag("userDetailList")) {
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                StatLine("Available points", data.stats.availablePoints)
+                                HeroStat("Available points", data.stats.availablePoints)
                                 StatLine("7-day total", data.stats.points7d)
                                 StatLine("30-day total", data.stats.points30d)
-                                StatLine("Total points earned", data.stats.totalPoints)
+                                StatLine("Redeemed", data.stats.redeemed)
                                 StatLine("Completed count", data.stats.completedCount)
-                                StatLine("Skipped count", data.stats.skippedCount)
 
-                                if (isAdmin) {
+                                if (isAdmin && data.stats.availablePoints > 0) {
                                     Button(
                                         modifier = Modifier.padding(top = 12.dp),
                                         onClick = { showRedeemDialog = true }
@@ -124,7 +127,16 @@ fun UserDetailContent(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("${redemption.amount} pts", style = MaterialTheme.typography.bodyMedium)
+                                    // Issue #113: web bolds and accent-colors the redemption amount so it
+                                    // stands out from the row's other fields; mirrors that here with the
+                                    // same tertiary accent used by #101/#110 elsewhere on this screen.
+                                    Text(
+                                        text = "${redemption.amount} pts",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.testTag("redemptionAmountEmphasis")
+                                    )
                                     Text("by ${redemption.redeemedBy}", style = MaterialTheme.typography.bodyMedium)
                                     Text(formatDate(redemption.timestamp), style = MaterialTheme.typography.bodySmall)
                                 }
@@ -195,6 +207,39 @@ private fun StatLine(label: String, value: Int) {
     }
 }
 
+/**
+ * Issue #101: "Available points" is User Detail's headline figure — chores-web renders it with a
+ * hero/elevated treatment, visually distinct from every other equal-weight [StatLine]. Mirrors
+ * that here with a large, accent-colored (`colorScheme.tertiary`, this app's mapped "accent" slot
+ * — see [com.derekwinters.chores.ui.theme.ChoresTheme]) display number, marked as a semantic
+ * heading so assistive tech and tests can tell it apart from the plain stat rows.
+ */
+@Composable
+private fun HeroStat(label: String, value: Int) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.semantics { heading() }
+        )
+    }
+}
+
+/**
+ * Issue #110: redeeming points is hard to undo, so it gets a two-step confirm mirroring
+ * chores-web — matching #107's admin/positive-balance gating on the button that opens this
+ * dialog. The first step collects and validates the amount; only advancing to an explicit
+ * second step, which restates the amount and the available-points balance in the same accent
+ * color as [HeroStat] (`colorScheme.tertiary`), actually submits via [onConfirm]. Dismissing the
+ * dialog (scrim tap / system back) at either step, or tapping "Back" at the confirm step, closes
+ * or rewinds without ever calling [onConfirm].
+ */
 @Composable
 private fun RedeemDialog(
     availablePoints: Int,
@@ -203,33 +248,56 @@ private fun RedeemDialog(
     onDismiss: () -> Unit
 ) {
     var amountText by remember { mutableStateOf("") }
+    var confirmStep by remember { mutableStateOf(false) }
     val error = if (amountText.isNotBlank()) onValidateAmount(amountText) else null
     val amount = amountText.toIntOrNull()
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Redeem Points") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = it },
-                    label = { Text("Amount") },
-                    singleLine = true
-                )
-                if (error != null) {
-                    Text(error, color = MaterialTheme.colorScheme.error)
-                } else if (amount != null) {
-                    Text("Before: $availablePoints -> After: ${availablePoints - amount}")
+    if (!confirmStep) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Redeem Points") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = amountText,
+                        onValueChange = { amountText = it },
+                        label = { Text("Amount") },
+                        singleLine = true
+                    )
+                    if (error != null) {
+                        Text(error, color = MaterialTheme.colorScheme.error)
+                    } else if (amount != null) {
+                        Text("Before: $availablePoints -> After: ${availablePoints - amount}")
+                    }
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { amount?.let(onConfirm) },
-                enabled = amount != null && error == null
-            ) { Text("Confirm") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { confirmStep = true },
+                    enabled = amount != null && error == null
+                ) { Text("Next") }
+            },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        )
+    } else {
+        val confirmedAmount = amount ?: 0
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Confirm Redemption") },
+            text = {
+                Column {
+                    Text("Redeem $confirmedAmount points?")
+                    Text(
+                        text = "Available points: $availablePoints",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.testTag("redeemConfirmAvailablePoints")
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { onConfirm(confirmedAmount) }) { Text("Confirm") }
+            },
+            dismissButton = { TextButton(onClick = { confirmStep = false }) { Text("Back") } }
+        )
+    }
 }

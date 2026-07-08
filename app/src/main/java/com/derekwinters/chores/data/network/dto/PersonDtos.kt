@@ -40,7 +40,9 @@ data class PointsSummaryDto(
  * Response for `GET /v1/points/stats/{person}` (issue #17), where `{person}` is the username
  * string, not a numeric person id — matches `UserStatsOut`. `display_points` is chores-web's
  * server-computed spendable balance (`points - points_redeemed`); `total_points` is the lifetime
- * earned total. There is no `redeemed_total` field on this endpoint.
+ * earned total. There is no `redeemed_total` wire field on this endpoint; issue #104's "Redeemed"
+ * stat is derived client-side as `total_points - display_points` (see
+ * [PersonStats][com.derekwinters.chores.data.model.PersonStats]'s `toDomain()` mapping).
  */
 @Serializable
 data class UserStatsDto(

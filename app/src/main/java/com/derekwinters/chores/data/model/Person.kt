@@ -47,7 +47,13 @@ fun PointsSummaryDto.toDomain(): PointsSummary = PointsSummary(
 /**
  * Issue #17: User Detail stats panel — matches chores-web's `UserStatsOut`. [availablePoints] is
  * the server-computed spendable balance (`display_points`); [totalPoints] is the lifetime earned
- * total (`total_points`). There is no "redeemed total" on this endpoint.
+ * total (`total_points`).
+ *
+ * Issue #104: [redeemed] is the lifetime redeemed total shown on web's User Detail as "Redeemed".
+ * `UserStatsOut` has no `redeemed_total`/`points_redeemed` wire field of its own, but chores-web's
+ * `/points/stats/{person}` handler derives `display_points` server-side as
+ * `total_points - points_redeemed` (see chores-web backend/app/routers/points.py), so the same
+ * total is recovered client-side as `total_points - display_points` without any API change.
  */
 data class PersonStats(
     val name: String = "",
@@ -56,7 +62,8 @@ data class PersonStats(
     val points7d: Int = 0,
     val points30d: Int = 0,
     val completedCount: Int = 0,
-    val skippedCount: Int = 0
+    val skippedCount: Int = 0,
+    val redeemed: Int = 0
 )
 
 fun UserStatsDto.toDomain(): PersonStats = PersonStats(
@@ -66,7 +73,8 @@ fun UserStatsDto.toDomain(): PersonStats = PersonStats(
     points7d = points_7d,
     points30d = points_30d,
     completedCount = completed_count,
-    skippedCount = skipped_count
+    skippedCount = skipped_count,
+    redeemed = total_points - display_points
 )
 
 /** Issue #17: a single redemption-history row. */

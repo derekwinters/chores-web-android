@@ -56,6 +56,23 @@ class UserDetailViewModelTest {
         assertEquals("completed", data.activity.single().action)
     }
 
+    /**
+     * Issue #104: "Redeemed" is derived as `total_points - display_points`, matching chores-web's
+     * backend derivation of `display_points` (`total_points - points_redeemed`) in reverse, since
+     * `UserStatsOut` has no `points_redeemed`/`redeemed_total` wire field of its own.
+     */
+    @Test
+    fun load_derivesRedeemedFromTotalAndDisplayPoints() = runTest(mainDispatcherRule.testDispatcher) {
+        val api = FakeChoresApi(
+            personStatsResult = UserStatsDto(display_points = 20, total_points = 45)
+        )
+        val viewModel = buildViewModel(api)
+        advanceUntilIdle()
+
+        val data = (viewModel.uiState.value as UiState.Success).data
+        assertEquals(25, data.stats.redeemed)
+    }
+
     @Test
     fun validateRedeemAmount_nonNumeric_isError() {
         val viewModel = buildViewModel(FakeChoresApi())
