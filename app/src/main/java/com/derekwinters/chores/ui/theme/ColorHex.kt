@@ -16,3 +16,14 @@ fun parseHexColor(hex: String, fallback: Color = Color.Gray): Color {
     }
     return runCatching { Color(argb.toLong(16).toInt()) }.getOrDefault(fallback)
 }
+
+/**
+ * Whether [hex] is a color [parseHexColor] can parse without falling back — i.e. `#RRGGBB` or
+ * `#AARRGGBB` (leading `#` optional, mirroring [parseHexColor]). Issue #130 uses this to gate the
+ * theme color editor's Save button on all 9 fields being valid.
+ */
+fun isValidHexColor(hex: String): Boolean {
+    val cleaned = hex.removePrefix("#")
+    return (cleaned.length == 6 || cleaned.length == 8) &&
+        cleaned.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
+}

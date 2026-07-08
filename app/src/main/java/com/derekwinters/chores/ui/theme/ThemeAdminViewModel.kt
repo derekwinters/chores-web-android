@@ -84,6 +84,22 @@ class ThemeAdminViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Issue #130: replaces [themeId]'s colors with [colors]'s full 9-color palette. Like rename,
+     * editing a protected built-in theme is rejected server-side and surfaces via [actionState].
+     */
+    fun updateColors(themeId: String, colors: ThemeOption) {
+        _actionState.value = UiState.Loading
+        viewModelScope.launch {
+            themeRepository.updateColors(themeId, colors)
+                .onSuccess {
+                    _actionState.value = UiState.Success(Unit)
+                    load()
+                }
+                .onFailure { error -> _actionState.value = UiState.Error(errorMessage(error)) }
+        }
+    }
+
     /** Non-built-in themes only; enforced server-side too. */
     fun deleteTheme(themeId: String) {
         _actionState.value = UiState.Loading

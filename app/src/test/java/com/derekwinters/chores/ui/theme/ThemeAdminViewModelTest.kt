@@ -75,6 +75,24 @@ class ThemeAdminViewModelTest {
     }
 
     @Test
+    fun updateColors_success_sendsFullPaletteWithoutName() = runTest(mainDispatcherRule.testDispatcher) {
+        val editedTheme = themeDto("2", "My Theme").toDomain().copy(primary = "#ABCDEF")
+        val api = FakeChoresApi(updateThemeResult = themeDto("2", "My Theme"))
+        val viewModel = ThemeAdminViewModel(ThemeRepository(api))
+        advanceUntilIdle()
+
+        viewModel.updateColors("2", editedTheme)
+        advanceUntilIdle()
+
+        assertEquals(UiState.Success(Unit), viewModel.actionState.value)
+        assertEquals("2", api.lastUpdateThemeId)
+        assertEquals("#ABCDEF", api.lastUpdateThemeRequest?.colors?.primary)
+        assertEquals(editedTheme.background, api.lastUpdateThemeRequest?.colors?.bg)
+        // Rename stays on the rename endpoint; the color update must not resend the name.
+        assertEquals(null, api.lastUpdateThemeRequest?.name)
+    }
+
+    @Test
     fun setDefaultTheme_callsRepository() = runTest(mainDispatcherRule.testDispatcher) {
         val api = FakeChoresApi(setDefaultThemeResult = themeDto("1", "Dark"))
         val viewModel = ThemeAdminViewModel(ThemeRepository(api))

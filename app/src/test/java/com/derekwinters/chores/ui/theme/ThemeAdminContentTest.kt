@@ -1,9 +1,11 @@
 package com.derekwinters.chores.ui.theme
 
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.derekwinters.chores.data.model.ThemeOption
@@ -31,7 +33,7 @@ class ThemeAdminContentTest {
     private val theme = ThemeOption(
         id = "1", name = "Dark", background = "#000000", surface = "#111111",
         surface2 = "#222222", accent = "#333333", primary = "#444444", secondary = "#555555",
-        success = "#0F0", warning = "#FF0", error = "#F00"
+        success = "#00FF00", warning = "#FFFF00", error = "#FF0000"
     )
 
     @Test
@@ -43,6 +45,7 @@ class ThemeAdminContentTest {
                 onSetDefault = { defaultId = it },
                 onCreate = { _, _ -> },
                 onRename = { _, _ -> },
+                onUpdateColors = { _, _ -> },
                 onDelete = {}
             )
         }
@@ -62,6 +65,7 @@ class ThemeAdminContentTest {
                 onSetDefault = {},
                 onCreate = { _, _ -> },
                 onRename = { id, newName -> renamedId = id; renamedTo = newName },
+                onUpdateColors = { _, _ -> },
                 onDelete = {}
             )
         }
@@ -86,14 +90,90 @@ class ThemeAdminContentTest {
                 onSetDefault = {},
                 onCreate = { _, _ -> },
                 onRename = { _, _ -> },
+                onUpdateColors = { _, _ -> },
                 onDelete = { deletedId = it }
             )
         }
 
         composeTestRule.onNodeWithText("Edit").performClick()
-        composeTestRule.onNodeWithText("Delete Theme").performClick()
+        composeTestRule.onNodeWithText("Delete Theme").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Delete").performClick()
 
         assert(deletedId == "1")
+    }
+
+    /**
+     * Issue #131: the row's "Copy" action opens the create dialog pre-named "<name> Copy" and
+     * creates the new theme from the tapped row's colors (not the list's first theme).
+     */
+    @Test
+    fun themeAdminContent_copyTheme_createsFromTappedRowsColors() {
+        val frog = theme.copy(id = "2", name = "Frog", primary = "#777777")
+        var createdName: String? = null
+        var createdSource: ThemeOption? = null
+        composeTestRule.setContent {
+            ThemeAdminContent(
+                uiState = UiState.Success(listOf(theme, frog)),
+                onSetDefault = {},
+                onCreate = { name, source -> createdName = name; createdSource = source },
+                onRename = { _, _ -> },
+                onUpdateColors = { _, _ -> },
+                onDelete = {}
+            )
+        }
+
+        // Rows render in list order, so the second "Copy" button belongs to the Frog row.
+        composeTestRule.onAllNodesWithText("Copy")[1].performClick()
+        composeTestRule.onNodeWithText("Frog Copy").assertExists() // pre-filled name field
+        composeTestRule.onNodeWithText("Create").performClick()
+
+        assert(createdName == "Frog Copy")
+        assert(createdSource == frog)
+    }
+
+    /** Issue #130: editing a hex field and saving sends the full updated palette (no rename). */
+    @Test
+    fun themeAdminContent_editTheme_changedColorSavesUpdatedColors() {
+        var renamed = false
+        var updatedId: String? = null
+        var updatedColors: ThemeOption? = null
+        composeTestRule.setContent {
+            ThemeAdminContent(
+                uiState = UiState.Success(listOf(theme)),
+                onSetDefault = {},
+                onCreate = { _, _ -> },
+                onRename = { _, _ -> renamed = true },
+                onUpdateColors = { id, colors -> updatedId = id; updatedColors = colors },
+                onDelete = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Edit").performClick()
+        composeTestRule.onNodeWithText("#444444").performScrollTo().performTextReplacement("#ABCDEF")
+        composeTestRule.onNodeWithText("Save").performClick()
+
+        assert(updatedId == "1")
+        assert(updatedColors == theme.copy(primary = "#ABCDEF"))
+        // Name untouched, so no rename call should fire.
+        assert(!renamed)
+    }
+
+    /** Issue #130: any invalid hex field disables Save. */
+    @Test
+    fun themeAdminContent_editTheme_invalidHexDisablesSave() {
+        composeTestRule.setContent {
+            ThemeAdminContent(
+                uiState = UiState.Success(listOf(theme)),
+                onSetDefault = {},
+                onCreate = { _, _ -> },
+                onRename = { _, _ -> },
+                onUpdateColors = { _, _ -> },
+                onDelete = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Edit").performClick()
+        composeTestRule.onNodeWithText("#444444").performScrollTo().performTextReplacement("nope")
+        composeTestRule.onNodeWithText("Save").assertIsNotEnabled()
     }
 }

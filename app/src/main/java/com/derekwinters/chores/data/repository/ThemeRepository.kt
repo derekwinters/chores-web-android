@@ -8,6 +8,7 @@ import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.network.ChoresApi
 import com.derekwinters.chores.data.network.dto.ThemeRenameRequestDto
 import com.derekwinters.chores.data.network.dto.ThemeSaveRequestDto
+import com.derekwinters.chores.data.network.dto.ThemeUpdateRequestDto
 import com.derekwinters.chores.data.network.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,9 +35,18 @@ class ThemeRepository @Inject constructor(
     suspend fun createTheme(name: String, sourceTheme: ThemeOption): Result<ThemeOption> =
         safeApiCall { api.saveTheme(ThemeSaveRequestDto(name, sourceTheme.toColorsDto())) }.map { it.toDomain() }
 
-    /** Issue #24: renames a theme; the admin edit dialog's only editable field. */
+    /** Issue #24: renames a theme via the rename-specific endpoint. */
     suspend fun renameTheme(themeId: String, name: String): Result<ThemeOption> =
         safeApiCall { api.renameTheme(themeId, ThemeRenameRequestDto(name)) }.map { it.toDomain() }
+
+    /**
+     * Issue #130: replaces [themeId]'s palette with [colors]'s full 9-color set via
+     * `PATCH /v1/theme/update/{theme_id}`. Colors are all-or-nothing per the real schema (see
+     * [ThemeUpdateRequestDto]); the name is left unchanged (rename stays on [renameTheme]).
+     * Built-in themes are protected server-side only, same as rename/delete.
+     */
+    suspend fun updateColors(themeId: String, colors: ThemeOption): Result<ThemeOption> =
+        safeApiCall { api.updateTheme(themeId, ThemeUpdateRequestDto(colors = colors.toColorsDto())) }.map { it.toDomain() }
 
     /** Issue #24: non-built-in themes only; enforced server-side too. */
     suspend fun deleteTheme(themeId: String): Result<Unit> = safeApiCall { api.deleteTheme(themeId) }
