@@ -119,8 +119,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // ViewModel + StateFlow collection in Compose (issue #5: first ViewModel pattern).
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
 
     // DI (issue #5, docs/adr/0002-network-auth-architecture.md: Hilt introduced now).
     implementation("com.google.dagger:hilt-android:2.51.1")
