@@ -16,8 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.derekwinters.chores.R
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #5 behavior: "Complete-chore action ... with Completer-picker dialog when
@@ -45,10 +45,10 @@ fun CompleterPickerDialog(
                                 selected = person == selected,
                                 onClick = { selected = person }
                             )
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = Space.xs)
                     ) {
                         RadioButton(selected = person == selected, onClick = { selected = person })
-                        Text(text = person, modifier = Modifier.padding(start = 8.dp))
+                        Text(text = person, modifier = Modifier.padding(start = Space.sm))
                     }
                 }
             }

@@ -26,13 +26,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.derekwinters.chores.data.model.AppConfig
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.BannerType
 import com.derekwinters.chores.ui.common.SettingsBanner
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #88: Chores settings section screen (independently-routed, shared SettingsViewModel scoped
@@ -69,7 +69,7 @@ fun SettingsChoresContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
@@ -88,20 +88,20 @@ fun SettingsChoresContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
+                        .padding(Space.lg)
                 ) {
-                    Divider(modifier = Modifier.padding(bottom = 16.dp))
+                    Divider(modifier = Modifier.padding(bottom = Space.lg))
                     Text("Chores Settings", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Configure when chores are marked as due soon and when the due time resets each day.",
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = Space.xs)
                     )
 
                     OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp),
+                            .padding(top = Space.lg),
                         value = draft.dueSoonDays.toString(),
                         onValueChange = { value -> value.toIntOrNull()?.let { draft = draft.copy(dueSoonDays = it) } },
                         label = { Text("Due Soon Days") }
@@ -110,10 +110,10 @@ fun SettingsChoresContent(
                     Text(
                         "Due Time Hour",
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 16.dp)
+                        modifier = Modifier.padding(top = Space.lg)
                     )
 
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = Space.sm)) {
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -143,15 +143,15 @@ fun SettingsChoresContent(
                     TextButton(onClick = onNavigateToData) { Text("Data (Export/Import, Points Log)") }
 
                     if (saveState is UiState.Error) {
-                        SettingsBanner(message = saveState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = 8.dp))
+                        SettingsBanner(message = saveState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = Space.sm))
                     }
 
                     Button(
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = Space.lg),
                         onClick = { onSave(draft) },
                         enabled = isDirty && !isSaving
                     ) {
-                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
                         Text("Save")
                     }
                 }

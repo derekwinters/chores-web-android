@@ -29,12 +29,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.CurrentUser
 import com.derekwinters.chores.ui.CurrentUserViewModel
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDate
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #17: per-person detail screen — stats, redeem-points flow, redemption history, and a
@@ -85,16 +85,16 @@ fun UserDetailContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
             is UiState.Success -> {
                 val data = uiState.data
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp).testTag("userDetailList")) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(Space.lg).testTag("userDetailList")) {
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(modifier = Modifier.padding(Space.lg)) {
                                 HeroStat("Available points", data.stats.availablePoints)
                                 StatLine("7-day total", data.stats.points7d)
                                 StatLine("30-day total", data.stats.points30d)
@@ -103,7 +103,7 @@ fun UserDetailContent(
 
                                 if (isAdmin && data.stats.availablePoints > 0) {
                                     Button(
-                                        modifier = Modifier.padding(top = 12.dp),
+                                        modifier = Modifier.padding(top = Space.md),
                                         onClick = { showRedeemDialog = true }
                                     ) { Text("Redeem Points") }
                                 }
@@ -115,16 +115,16 @@ fun UserDetailContent(
                         Text(
                             text = "Redemption History",
                             style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                            modifier = Modifier.padding(top = Space.lg, bottom = Space.xs)
                         )
                     }
                     if (data.redemptions.isEmpty()) {
                         item { Text("No redemptions yet") }
                     } else {
                         items(data.redemptions, key = { "redemption-${it.id}" }) { redemption ->
-                            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                            Card(modifier = Modifier.fillMaxWidth().padding(vertical = Space.xxs)) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(Space.md),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     // Issue #113: web bolds and accent-colors the redemption amount so it
@@ -146,7 +146,7 @@ fun UserDetailContent(
 
                     item {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = Space.lg, bottom = Space.xs),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(text = "Chore Activity", style = MaterialTheme.typography.titleMedium)
@@ -157,9 +157,9 @@ fun UserDetailContent(
                         item { Text("No activity yet") }
                     } else {
                         items(data.activity, key = { "activity-${it.id}" }) { entry ->
-                            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                            Card(modifier = Modifier.fillMaxWidth().padding(vertical = Space.xxs)) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(Space.md),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(entry.choreName, style = MaterialTheme.typography.bodyMedium)
@@ -216,7 +216,7 @@ private fun StatLine(label: String, value: Int) {
  */
 @Composable
 private fun HeroStat(label: String, value: Int) {
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = Space.sm)) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,

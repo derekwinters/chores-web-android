@@ -39,6 +39,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.theme.Corner
+import com.derekwinters.chores.ui.theme.Elevations
+import com.derekwinters.chores.ui.theme.IconSize
+import com.derekwinters.chores.ui.theme.Sizes
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #5 behavior: "Login screen: server URL + username/password fields, calls
@@ -102,13 +107,13 @@ fun LoginContent(
     ) {
         Card(
             modifier = Modifier
-                .widthIn(max = 400.dp)
-                .padding(24.dp),
+                .widthIn(max = Sizes.formMax)
+                .padding(Space.xl),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevations.level2)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(Space.xl),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Issue #64: app-branding heading above the login title, matching web's branded
@@ -123,13 +128,13 @@ fun LoginContent(
                 Text(
                     text = stringResource(R.string.login_screen_title),
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = Space.xs)
                 )
 
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 24.dp),
+                        .padding(top = Space.xl),
                     value = serverUrl,
                     onValueChange = { serverUrl = it },
                     label = { Text(stringResource(R.string.server_url_label)) },
@@ -145,7 +150,7 @@ fun LoginContent(
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = Space.sm),
                     value = username,
                     onValueChange = { username = it },
                     label = { Text(stringResource(R.string.username_label)) },
@@ -157,7 +162,7 @@ fun LoginContent(
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = Space.sm),
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(stringResource(R.string.password_label)) },
@@ -174,11 +179,11 @@ fun LoginContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .padding(top = Space.sm)
+                            .clip(RoundedCornerShape(Corner.xs))
                             .background(MaterialTheme.colorScheme.errorContainer)
-                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(4.dp))
-                            .padding(12.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(Corner.xs))
+                            .padding(Space.md)
                     ) {
                         Text(
                             text = uiState.message,
@@ -188,7 +193,7 @@ fun LoginContent(
                 }
 
                 Button(
-                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+                    modifier = Modifier.padding(top = Space.lg).fillMaxWidth(),
                     onClick = { onLogin(serverUrl, username, password) },
                     enabled = !isLoading && serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
                     // Issue #66: flat rectangular shape + flat (no-elevation) blue button,
@@ -197,13 +202,13 @@ fun LoginContent(
                     shape = LoginFieldShape,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        disabledElevation = 0.dp
+                        defaultElevation = Elevations.level0,
+                        pressedElevation = Elevations.level0,
+                        disabledElevation = Elevations.level0
                     )
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp).padding(end = 8.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(IconSize.sm).padding(end = Space.sm))
                     }
                     Text(stringResource(R.string.login_button))
                 }
@@ -213,7 +218,7 @@ fun LoginContent(
 }
 
 /** Issue #66: shared flat rectangular shape for Login's input fields and submit button. */
-private val LoginFieldShape = RoundedCornerShape(4.dp)
+private val LoginFieldShape = RoundedCornerShape(Corner.xs)
 
 /**
  * Issue #11: shown instead of the normal login form when the backend returns a 403 with a
@@ -237,7 +242,7 @@ fun ForcedPasswordResetContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Space.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -246,13 +251,13 @@ fun ForcedPasswordResetContent(
             style = MaterialTheme.typography.headlineMedium
         )
         Text(
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = Space.sm),
             text = stringResource(R.string.password_reset_description),
             style = MaterialTheme.typography.bodyMedium
         )
 
         OutlinedTextField(
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Space.xl),
             value = newPassword,
             onValueChange = { newPassword = it },
             label = { Text(stringResource(R.string.new_password_label)) },
@@ -263,7 +268,7 @@ fun ForcedPasswordResetContent(
         )
 
         OutlinedTextField(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
             label = { Text(stringResource(R.string.confirm_password_label)) },
@@ -275,36 +280,36 @@ fun ForcedPasswordResetContent(
 
         if (newPassword.isNotEmpty() && !meetsMinLength) {
             Text(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = Space.sm),
                 text = stringResource(R.string.password_too_short),
                 color = MaterialTheme.colorScheme.error
             )
         } else if (confirmPassword.isNotEmpty() && !passwordsMatch) {
             Text(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = Space.sm),
                 text = stringResource(R.string.passwords_do_not_match),
                 color = MaterialTheme.colorScheme.error
             )
         } else if (uiState is UiState.Error) {
             Text(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = Space.sm),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
         }
 
         Button(
-            modifier = Modifier.padding(top = 16.dp),
+            modifier = Modifier.padding(top = Space.lg),
             onClick = { onSubmit(newPassword) },
             enabled = !isLoading && meetsMinLength && passwordsMatch
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp).padding(end = 8.dp))
+                CircularProgressIndicator(modifier = Modifier.size(IconSize.sm).padding(end = Space.sm))
             }
             Text(stringResource(R.string.password_reset_submit))
         }
 
-        TextButton(modifier = Modifier.padding(top = 8.dp), onClick = onCancel, enabled = !isLoading) {
+        TextButton(modifier = Modifier.padding(top = Space.sm), onClick = onCancel, enabled = !isLoading) {
             Text(stringResource(R.string.cancel))
         }
     }

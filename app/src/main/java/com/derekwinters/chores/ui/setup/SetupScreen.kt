@@ -41,6 +41,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.theme.Corner
+import com.derekwinters.chores.ui.theme.Elevations
+import com.derekwinters.chores.ui.theme.IconSize
+import com.derekwinters.chores.ui.theme.Sizes
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #11: first-run "Create Admin Account" flow, shown by
@@ -88,10 +93,10 @@ fun SetupContent(
     ) {
         Card(
             modifier = Modifier
-                .widthIn(max = 400.dp)
-                .padding(24.dp),
+                .widthIn(max = Sizes.formMax)
+                .padding(Space.xl),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevations.level2)
         ) {
             Column(
                 // Setup's form has more fields than Login's (username/password/confirm +
@@ -100,7 +105,7 @@ fun SetupContent(
                 // field (including the submit button) reachable instead of silently clipping/
                 // overflowing past the visible/hit-testable area.
                 modifier = Modifier
-                    .padding(24.dp)
+                    .padding(Space.xl)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -116,11 +121,11 @@ fun SetupContent(
                 Text(
                     text = stringResource(R.string.setup_title),
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = Space.xs)
                 )
 
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xl),
                     value = username,
                     onValueChange = { username = it },
                     label = { Text(stringResource(R.string.username_label)) },
@@ -131,7 +136,7 @@ fun SetupContent(
                 )
 
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(stringResource(R.string.password_label)) },
@@ -143,7 +148,7 @@ fun SetupContent(
                 )
 
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text(stringResource(R.string.confirm_password_label)) },
@@ -160,11 +165,11 @@ fun SetupContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .padding(top = Space.sm)
+                            .clip(RoundedCornerShape(Corner.xs))
                             .background(MaterialTheme.colorScheme.errorContainer)
-                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(4.dp))
-                            .padding(12.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(Corner.xs))
+                            .padding(Space.md)
                     ) {
                         Text(
                             text = stringResource(R.string.passwords_do_not_match),
@@ -175,11 +180,11 @@ fun SetupContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .padding(top = Space.sm)
+                            .clip(RoundedCornerShape(Corner.xs))
                             .background(MaterialTheme.colorScheme.errorContainer)
-                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(4.dp))
-                            .padding(12.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(Corner.xs))
+                            .padding(Space.md)
                     ) {
                         Text(
                             text = uiState.message,
@@ -192,14 +197,14 @@ fun SetupContent(
                 // previous Switch-on-the-right layout), with a dynamic hint beneath describing
                 // the consequence of the current setting.
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.lg),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(checked = requireAuth, onCheckedChange = { requireAuth = it }, enabled = !isLoading)
                     Text(stringResource(R.string.require_authentication_label))
                 }
                 Text(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
                     text = stringResource(
                         if (requireAuth) R.string.require_authentication_hint_enabled
                         else R.string.require_authentication_hint_disabled
@@ -209,7 +214,7 @@ fun SetupContent(
                 )
 
                 Button(
-                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+                    modifier = Modifier.padding(top = Space.lg).fillMaxWidth(),
                     onClick = { onCreateAccount(username, password, requireAuth) },
                     enabled = !isLoading && username.isNotBlank() && password.isNotBlank() && passwordsMatch,
                     // Issue #92: flat rectangular shape + flat (no-elevation) blue button,
@@ -217,20 +222,20 @@ fun SetupContent(
                     shape = SetupFieldShape,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        disabledElevation = 0.dp
+                        defaultElevation = Elevations.level0,
+                        pressedElevation = Elevations.level0,
+                        disabledElevation = Elevations.level0
                     )
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp).padding(end = 8.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(IconSize.sm).padding(end = Space.sm))
                     }
                     Text(stringResource(R.string.setup_submit))
                 }
 
                 // Issue #85: footer disclaimer explaining this is a one-time, first-run flow.
                 Text(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.lg),
                     text = stringResource(R.string.setup_footer_disclaimer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -241,4 +246,4 @@ fun SetupContent(
 }
 
 /** Issue #92: shared flat rectangular shape for Setup's input fields and buttons. */
-private val SetupFieldShape = RoundedCornerShape(4.dp)
+private val SetupFieldShape = RoundedCornerShape(Corner.xs)

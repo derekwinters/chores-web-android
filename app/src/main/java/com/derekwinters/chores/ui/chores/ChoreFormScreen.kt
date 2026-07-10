@@ -40,10 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.CHORE_POINT_OPTIONS
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.theme.Space
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -120,7 +120,7 @@ fun ChoreFormContent(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(Space.lg)
     ) {
         Text(
             text = if (isEditMode) "Edit Chore" else "New Chore",
@@ -128,7 +128,7 @@ fun ChoreFormContent(
         )
 
         OutlinedTextField(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Space.lg),
             value = formState.name,
             onValueChange = { name -> onFormChange { it.copy(name = name) } },
             label = { Text("Name") },
@@ -140,7 +140,7 @@ fun ChoreFormContent(
         Row(modifier = Modifier.fillMaxWidth()) {
             CHORE_POINT_OPTIONS.forEach { option ->
                 FilterChip(
-                    modifier = Modifier.padding(end = 4.dp),
+                    modifier = Modifier.padding(end = Space.xs),
                     selected = formState.points == option,
                     onClick = { onFormChange { it.copy(points = option) } },
                     label = { Text(option.toString()) },
@@ -151,7 +151,7 @@ fun ChoreFormContent(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Space.lg),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -167,7 +167,7 @@ fun ChoreFormContent(
             var showDatePicker by remember { mutableStateOf(false) }
 
             OutlinedTextField(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                 value = formState.nextDue.orEmpty(),
                 onValueChange = {},
                 label = { Text("Next Due") },
@@ -312,7 +312,7 @@ fun ChoreFormContent(
             }
             ScheduleType.INTERVAL -> {
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                     value = formState.intervalDays?.toString().orEmpty(),
                     onValueChange = { value -> onFormChange { it.copy(intervalDays = value.toIntOrNull()) } },
                     label = { Text("Every N days") },
@@ -322,7 +322,7 @@ fun ChoreFormContent(
             }
             ScheduleType.MONTHLY -> {
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                     value = formState.dayOfMonth?.toString().orEmpty(),
                     onValueChange = { value -> onFormChange { it.copy(dayOfMonth = value.toIntOrNull()) } },
                     label = { Text("Day of month") },
@@ -332,7 +332,7 @@ fun ChoreFormContent(
             }
             ScheduleType.YEARLY -> {
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                     value = formState.month?.toString().orEmpty(),
                     onValueChange = { value -> onFormChange { it.copy(month = value.toIntOrNull()) } },
                     label = { Text("Month (1-12)") },
@@ -351,7 +351,7 @@ fun ChoreFormContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 4.dp)
+                    .padding(top = Space.lg, bottom = Space.xs)
                     .clickable { constraintsExpanded = !constraintsExpanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -389,7 +389,7 @@ fun ChoreFormContent(
                 Text(
                     text = "If constraint isn't met",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    modifier = Modifier.padding(top = Space.sm, bottom = Space.xs)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Row(
@@ -399,7 +399,7 @@ fun ChoreFormContent(
                                 enabled = !isSaving,
                                 onClick = { onFormChange { it.copy(constraintNotMetBehavior = ConstraintBehavior.SKIP) } }
                             )
-                            .padding(end = 8.dp),
+                            .padding(end = Space.sm),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
@@ -437,7 +437,7 @@ fun ChoreFormContent(
                     Text(
                         text = "Weekdays only",
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        modifier = Modifier.padding(top = Space.sm, bottom = Space.xs)
                     )
                     WeekdayPillRow(
                         selectedDays = formState.weekdayConstraint,
@@ -463,17 +463,17 @@ fun ChoreFormContent(
 
         if (saveState is UiState.Error) {
             Text(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = Space.sm),
                 text = saveState.message,
                 color = MaterialTheme.colorScheme.error
             )
         }
 
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = Space.lg), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onCancel, enabled = !isSaving) { Text("Cancel") }
-            Button(modifier = Modifier.padding(start = 8.dp), onClick = onSave, enabled = !isSaving) {
+            Button(modifier = Modifier.padding(start = Space.sm), onClick = onSave, enabled = !isSaving) {
                 if (isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                    CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
                 }
                 Text("Save")
             }
@@ -483,7 +483,7 @@ fun ChoreFormContent(
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text = text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
+    Text(text = text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Space.lg, bottom = Space.xs))
 }
 
 /**
@@ -497,7 +497,7 @@ private fun WeekdayPillRow(selectedDays: Set<Int>, enabled: Boolean, onToggleDay
     Row(modifier = Modifier.fillMaxWidth()) {
         WEEKDAY_ABBREVIATIONS.forEachIndexed { day, abbreviation ->
             FilterChip(
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(end = Space.xs),
                 selected = day in selectedDays,
                 onClick = { onToggleDay(day) },
                 label = { Text(abbreviation) },
@@ -529,7 +529,7 @@ private fun EligiblePeoplePillRow(
     Row(modifier = Modifier.fillMaxWidth()) {
         people.forEach { person ->
             FilterChip(
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(end = Space.xs),
                 selected = person in selectedPeople,
                 onClick = { onTogglePerson(person) },
                 label = { Text(person) },
@@ -546,11 +546,11 @@ private fun RadioRow(label: String, selected: Boolean, enabled: Boolean, onClick
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, enabled = enabled, onClick = onClick)
-            .padding(vertical = 2.dp),
+            .padding(vertical = Space.xxs),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected = selected, onClick = onClick, enabled = enabled)
-        Text(text = label, modifier = Modifier.padding(start = 8.dp))
+        Text(text = label, modifier = Modifier.padding(start = Space.sm))
     }
 }
 
@@ -596,10 +596,10 @@ private fun RadioGridCell(
     Row(
         modifier = modifier
             .selectable(selected = selected, enabled = enabled, onClick = onClick)
-            .padding(top = 2.dp, bottom = 2.dp, end = 4.dp),
+            .padding(top = Space.xxs, bottom = Space.xxs, end = Space.xs),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected = selected, onClick = onClick, enabled = enabled)
-        Text(text = label, modifier = Modifier.padding(start = 4.dp))
+        Text(text = label, modifier = Modifier.padding(start = Space.xs))
     }
 }

@@ -27,13 +27,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.tokens.DesignTokens
 import com.derekwinters.chores.ui.chores.DueWithinFilter
+import com.derekwinters.chores.ui.theme.AvatarSize
 import com.derekwinters.chores.ui.theme.LocalThemeOption
+import com.derekwinters.chores.ui.theme.Space
 import com.derekwinters.chores.ui.theme.parseHexColor
 
 /**
@@ -64,7 +66,7 @@ fun DashboardContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
@@ -94,7 +96,7 @@ private fun DashboardUserCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = Space.lg, vertical = Space.sm)
             .clickable { navActions.onNavigateToUserDetail(card.personId, card.username) },
         // Custom themes' surface/background colors can be very close in tone (little built-in
         // Material elevation contrast to fall back on), so use the theme's more differentiated
@@ -102,11 +104,11 @@ private fun DashboardUserCard(
         // matching chores-web's own use of a more elevated tone for cards sitting on the page.
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Space.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(AvatarSize.lg)
                         // Issue #115: web's avatar circle uses --accent, not the primary color;
                         // ChoresTheme maps accent -> tertiary in the Material3 ColorScheme.
                         .background(color = MaterialTheme.colorScheme.tertiary, shape = CircleShape),
@@ -117,7 +119,7 @@ private fun DashboardUserCard(
                 Text(
                     text = card.displayName,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.padding(start = Space.md)
                 )
             }
 
@@ -133,7 +135,7 @@ private fun DashboardUserCard(
                     trend = card.trend7d
                 )
                 ProgressRow(
-                    modifier = Modifier.weight(1f).padding(start = 16.dp),
+                    modifier = Modifier.weight(1f).padding(start = Space.lg),
                     headerLabel = stringResource(R.string.dashboard_30_day_label),
                     value = card.points30d,
                     goal = card.goal30d,
@@ -143,7 +145,7 @@ private fun DashboardUserCard(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = Space.sm)
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f).testTag("dueNowButton"),
@@ -187,7 +189,7 @@ private fun ProgressRow(
     trend: TrendStatus,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(top = 8.dp)) {
+    Column(modifier = modifier.padding(top = Space.sm)) {
         Text(text = headerLabel, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
@@ -204,7 +206,7 @@ private fun ProgressRow(
         }
         LinearProgressIndicator(
             progress = progress,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
             color = trendColor(trend),
             trackColor = Color.Transparent
         )
@@ -220,11 +222,11 @@ private fun trendColor(trend: TrendStatus): Color {
     // Issue #120: success/warning have no first-class Material3 ColorScheme slot (see
     // ChoresTheme's doc), so read them from the raw ThemeOption via LocalThemeOption instead of
     // colorScheme.primary (wrong hue) / a hardcoded gold (ignores custom themes). Falls back to
-    // the old hardcoded values if no theme has resolved yet.
+    // the design-token warning role (issue #23) if no theme has resolved yet.
     val themeOption = LocalThemeOption.current
     return when (trend) {
         TrendStatus.SUCCESS -> themeOption?.success?.let(::parseHexColor) ?: MaterialTheme.colorScheme.primary
-        TrendStatus.WARNING -> themeOption?.warning?.let(::parseHexColor) ?: Color(0xFFF9A825)
+        TrendStatus.WARNING -> themeOption?.warning?.let(::parseHexColor) ?: Color(DesignTokens.ColorDark.WARNING)
         TrendStatus.ERROR -> MaterialTheme.colorScheme.error
     }
 }
@@ -238,7 +240,7 @@ private fun trendColor(trend: TrendStatus): Color {
 private fun dueCountColor(count: Int): Color {
     if (count == 0) return MaterialTheme.colorScheme.onSurfaceVariant
     val themeOption = LocalThemeOption.current
-    return themeOption?.warning?.let(::parseHexColor) ?: Color(0xFFF9A825)
+    return themeOption?.warning?.let(::parseHexColor) ?: Color(DesignTokens.ColorDark.WARNING)
 }
 
 private fun progressFraction(current: Int, goal: Int): Float =

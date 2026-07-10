@@ -25,13 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.derekwinters.chores.data.model.AppConfig
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.BannerType
 import com.derekwinters.chores.ui.common.SettingsBanner
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #88: General settings section screen (independently-routed, shared SettingsViewModel
@@ -65,7 +65,7 @@ fun SettingsGeneralContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
@@ -84,16 +84,16 @@ fun SettingsGeneralContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
+                        .padding(Space.lg)
                 ) {
-                    Divider(modifier = Modifier.padding(bottom = 16.dp).testTag("AppTitleSectionDivider"))
+                    Divider(modifier = Modifier.padding(bottom = Space.lg).testTag("AppTitleSectionDivider"))
 
                     // App Title Section
                     Text("App Title", style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .padding(top = Space.sm)
                             .testTag("AppTitleField"),
                         value = draft.appTitle,
                         onValueChange = { draft = draft.copy(appTitle = it) },
@@ -103,7 +103,7 @@ fun SettingsGeneralContent(
                     // Timezone Section
                     Divider(
                         modifier = Modifier
-                            .padding(top = 16.dp, bottom = 16.dp)
+                            .padding(top = Space.lg, bottom = Space.lg)
                             .testTag("TimezoneSectionDivider")
                     )
                     Text(
@@ -111,7 +111,7 @@ fun SettingsGeneralContent(
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = Space.sm)) {
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -139,15 +139,15 @@ fun SettingsGeneralContent(
                     }
 
                     if (saveState is UiState.Error) {
-                        SettingsBanner(message = saveState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = 8.dp))
+                        SettingsBanner(message = saveState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = Space.sm))
                     }
 
                     Button(
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = Space.lg),
                         onClick = { onSave(draft) },
                         enabled = isDirty && !isSaving
                     ) {
-                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
                         Text("Save")
                     }
                 }

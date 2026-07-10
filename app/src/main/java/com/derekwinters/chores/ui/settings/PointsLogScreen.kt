@@ -26,12 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.PointsLogEntry
 import com.derekwinters.chores.data.repository.PointsLogPage
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDateTime
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #23: admin table for directly correcting historical point credits — paginated (offset-
@@ -66,13 +66,13 @@ fun PointsLogContent(
     var editingEntry by remember { mutableStateOf<PointsLogEntry?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text("Points Log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+        Text("Points Log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Space.lg))
 
         Box(modifier = Modifier.weight(1f).fillMaxSize()) {
             when (uiState) {
                 is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 is UiState.Error -> Text(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                     text = uiState.message,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -98,7 +98,7 @@ fun PointsLogContent(
             // final page; an empty log reads "Showing 0–0 of 0".
             val rangeStart = if (page.total == 0) 0 else page.offset + 1
             val rangeEnd = minOf(page.offset + page.limit, page.total)
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth().padding(Space.sm), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = onPreviousPage, enabled = page.offset > 0) { Text("Previous") }
                 Text("Showing $rangeStart–$rangeEnd of ${page.total}")
                 TextButton(onClick = onNextPage, enabled = page.offset + page.limit < page.total) { Text("Next") }
@@ -127,10 +127,10 @@ private fun PointsLogRow(entry: PointsLogEntry, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = Space.sm, vertical = Space.xs)
             .clickable(onClick = onClick)
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier = Modifier.fillMaxWidth().padding(Space.md), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text(entry.person, style = MaterialTheme.typography.titleSmall)
                 // Issue #121: web's data-correction table shows each entry's ID so admins can

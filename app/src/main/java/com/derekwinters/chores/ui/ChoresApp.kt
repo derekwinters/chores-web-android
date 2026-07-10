@@ -54,7 +54,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
@@ -69,6 +68,7 @@ import androidx.navigation.navigation
 import com.derekwinters.chores.R
 import com.derekwinters.chores.data.model.CurrentUser
 import com.derekwinters.chores.data.model.ThemeOption
+import com.derekwinters.chores.tokens.DesignTokens
 import com.derekwinters.chores.ui.auth.AuthGateScreen
 import com.derekwinters.chores.ui.chores.ChoreFormScreen
 import com.derekwinters.chores.ui.chores.ChoreListScreen
@@ -87,7 +87,9 @@ import com.derekwinters.chores.ui.settings.SettingsChoresScreen
 import com.derekwinters.chores.ui.settings.SettingsGeneralScreen
 import com.derekwinters.chores.ui.settings.SettingsMenuContent
 import com.derekwinters.chores.ui.theme.AppThemeViewModel
+import com.derekwinters.chores.ui.theme.AvatarSize
 import com.derekwinters.chores.ui.theme.ChoresTheme
+import com.derekwinters.chores.ui.theme.Space
 import com.derekwinters.chores.ui.theme.ThemeAdminScreen
 import com.derekwinters.chores.ui.theme.ThemePreferenceScreen
 import com.derekwinters.chores.ui.settings.SettingsNavActions
@@ -105,10 +107,10 @@ import com.derekwinters.chores.ui.users.UserManagementScreen
  * NavHost-level default.
  */
 private val fadeThroughEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.92f, animationSpec = tween(300))
+    fadeIn(animationSpec = tween(DesignTokens.Motion.DURATION_LG)) + scaleIn(initialScale = DesignTokens.Motion.SCALE_IN_START, animationSpec = tween(DesignTokens.Motion.DURATION_LG))
 }
 private val fadeThroughExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(300))
+    fadeOut(animationSpec = tween(DesignTokens.Motion.DURATION_LG))
 }
 
 /**
@@ -117,20 +119,20 @@ private val fadeThroughExit: AnimatedContentTransitionScope<NavBackStackEntry>.(
  * destination/graph so it overrides the NavHost-level fade-through default above.
  */
 private val sharedAxisEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(300)) +
-        fadeIn(animationSpec = tween(300))
+    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(DesignTokens.Motion.DURATION_LG)) +
+        fadeIn(animationSpec = tween(DesignTokens.Motion.DURATION_LG))
 }
 private val sharedAxisExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(300)) +
-        fadeOut(animationSpec = tween(300))
+    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(DesignTokens.Motion.DURATION_LG)) +
+        fadeOut(animationSpec = tween(DesignTokens.Motion.DURATION_LG))
 }
 private val sharedAxisPopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(300)) +
-        fadeIn(animationSpec = tween(300))
+    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(DesignTokens.Motion.DURATION_LG)) +
+        fadeIn(animationSpec = tween(DesignTokens.Motion.DURATION_LG))
 }
 private val sharedAxisPopExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(300)) +
-        fadeOut(animationSpec = tween(300))
+    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(DesignTokens.Motion.DURATION_LG)) +
+        fadeOut(animationSpec = tween(DesignTokens.Motion.DURATION_LG))
 }
 
 /**
@@ -422,10 +424,12 @@ private fun ChoresAuthenticatedScaffold(
                         // `.app-title`/`.topnav-title` (Playfair Display serif, 1.3rem/700/-0.5px).
                         Text(
                             text = appTitle ?: stringResource(R.string.app_name),
+                            // Issue #23: size/tracking come from the brand-title design token;
+                            // Serif + Bold match the token's font.family.brand / weight.bold.
                             fontFamily = FontFamily.Serif,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 20.8.sp,
-                            letterSpacing = (-0.5).sp,
+                            fontSize = DesignTokens.Typography.BRAND_TITLE_SIZE.sp,
+                            letterSpacing = DesignTokens.Typography.BRAND_TITLE_LETTER_SPACING.sp,
                             modifier = Modifier.testTag("appTitleBranding")
                         )
                         Text(currentLabel, style = MaterialTheme.typography.bodySmall)
@@ -442,8 +446,8 @@ private fun ChoresAuthenticatedScaffold(
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .padding(start = 12.dp)
-                            .size(32.dp)
+                            .padding(start = Space.md)
+                            .size(AvatarSize.md)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.tertiary)
                             .testTag("userMenuTrigger")
@@ -465,7 +469,7 @@ private fun ChoresAuthenticatedScaffold(
                                 text = stringResource(R.string.signed_in_as_format, username),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm)
                             )
                             HorizontalDivider()
                         }
