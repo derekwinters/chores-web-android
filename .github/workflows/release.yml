@@ -29,6 +29,8 @@ jobs:
 
       - name: Build final release (debug-signed)
         run: ./gradlew assembleRelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Attach APK to GitHub Release
         uses: softprops/action-gh-release@v2

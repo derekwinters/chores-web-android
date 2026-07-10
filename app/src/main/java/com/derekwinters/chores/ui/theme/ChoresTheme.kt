@@ -1,13 +1,16 @@
 package com.derekwinters.chores.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import com.derekwinters.chores.data.model.ThemeOption
+import com.derekwinters.chores.tokens.DesignTokens
 
 /**
  * Issue #120: exposes the raw [ThemeOption] currently applied by [ChoresTheme] to descendants
@@ -26,10 +29,26 @@ val LocalThemeOption = staticCompositionLocalOf<ThemeOption?> { null }
  * slots either, so callers needing them (e.g. Dashboard's trend coloring) read the [ThemeOption]
  * directly via [LocalThemeOption] rather than through `MaterialTheme.colorScheme`.
  */
+/**
+ * Pre-theme default scheme built from the design-tokens artifact's dark set — the same
+ * values chores-web-frontend prepaints on `:root` before its runtime theme resolves
+ * (rollout: derekwinters/chores-web-docs#11, this repo's #13). Replaces the previous
+ * bare-Material3 fallback so both clients show the same baseline until /theme resolves.
+ */
+internal fun tokenDefaultColorScheme(): ColorScheme = darkColorScheme(
+    primary = Color(DesignTokens.ColorDark.PRIMARY),
+    secondary = Color(DesignTokens.ColorDark.SECONDARY),
+    tertiary = Color(DesignTokens.ColorDark.ACCENT),
+    background = Color(DesignTokens.ColorDark.BACKGROUND),
+    surface = Color(DesignTokens.ColorDark.SURFACE),
+    surfaceVariant = Color(DesignTokens.ColorDark.SURFACE2),
+    error = Color(DesignTokens.ColorDark.ERROR),
+)
+
 @Composable
 fun ChoresTheme(themeOption: ThemeOption?, content: @Composable () -> Unit) {
     val colorScheme = if (themeOption == null) {
-        MaterialTheme.colorScheme
+        tokenDefaultColorScheme()
     } else {
         val background = parseHexColor(themeOption.background)
         val primary = parseHexColor(themeOption.primary)

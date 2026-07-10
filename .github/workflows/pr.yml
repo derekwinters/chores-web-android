@@ -28,9 +28,13 @@ jobs:
 
       - name: Run unit tests
         run: ./gradlew test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build debug APK
         run: ./gradlew assembleDebug
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compute short SHA
         id: short-sha
