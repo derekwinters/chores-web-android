@@ -36,7 +36,16 @@ jobs:
       # unreviewed pixel drift in the tokenized components fails the PR. See
       # docs/snapshot-testing.md.
       - name: Verify snapshots (design-token guardrail)
-        run: ./gradlew verifyRoborazziDebug
+        # Self-skipping until goldens exist: record-snapshots.yml can only be
+        # dispatched once it's on the default branch, so the first goldens are
+        # recorded right after this merges (bootstrap documented in
+        # docs/snapshot-testing.md).
+        run: |
+          if ls app/src/test/snapshots/*.png >/dev/null 2>&1; then
+            ./gradlew verifyRoborazziDebug
+          else
+            echo "No goldens recorded yet — skipping verify (bootstrap)."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
