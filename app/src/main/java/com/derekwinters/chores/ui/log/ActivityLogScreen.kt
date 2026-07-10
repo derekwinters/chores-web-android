@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.ExpandLess
@@ -41,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.LogEntry
 import com.derekwinters.chores.ui.UiState
@@ -49,9 +47,11 @@ import com.derekwinters.chores.ui.common.formatDateTime
 import com.derekwinters.chores.ui.common.humanizeActionLabel
 import com.derekwinters.chores.tokens.DesignTokens
 import com.derekwinters.chores.ui.theme.LocalThemeOption
+import com.derekwinters.chores.ui.theme.PillBadgeTokens
 import com.derekwinters.chores.ui.theme.Space
 import com.derekwinters.chores.ui.theme.TokenAlpha
 import com.derekwinters.chores.ui.theme.parseHexColor
+import com.derekwinters.chores.ui.theme.pillShape
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -368,17 +368,17 @@ private fun LogRow(entry: LogEntry) {
 private fun PillBadge(text: String, color: Color, modifier: Modifier = Modifier, testTag: String? = null) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(percent = 50),
-        color = color.copy(alpha = TokenAlpha.tint),
+        // Issue #24: pill-badge component tokens — the fully-rounded pillShape renders
+        // identically to the previous RoundedCornerShape(percent = 50).
+        shape = pillShape,
+        color = color.copy(alpha = PillBadgeTokens.fillAlpha),
         contentColor = color
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier
-                // 10dp horizontal inset is the pill badge's component-level padding; it
-                // becomes a badge component token in Iteration 4 (issue #24), not snapped.
-                .padding(horizontal = 10.dp, vertical = Space.xs)
+                .padding(horizontal = PillBadgeTokens.paddingX, vertical = PillBadgeTokens.paddingY)
                 .let { base -> if (testTag != null) base.testTag(testTag) else base }
         )
     }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -44,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.CHORE_POINT_OPTIONS
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.pillShape
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -60,9 +60,10 @@ private val WEEKDAY_ABBREVIATIONS = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "F
  * Issue #108: fully-rounded "pill" shape applied to the Points selector and eligible-people
  * picker's [FilterChip]s. Material3's default `FilterChip` shape is a small (8dp) corner radius
  * rounded-rectangle, not a true stadium/pill shape -- this closes that styling gap so these two
- * pickers read as pill toggle buttons matching web, per issue #108's ask.
+ * pickers read as pill toggle buttons matching web, per issue #108's ask. Issue #24: aliases the
+ * token layer's [pillShape] (9999dp corner radius, renders identically to `percent = 50`).
  */
-private val PILL_SHAPE = RoundedCornerShape(percent = 50)
+private val PILL_SHAPE = pillShape
 
 /**
  * Issue #16: chore create/edit form, chores-web's `ChoreForm.jsx` equivalent — the richest

@@ -111,7 +111,11 @@ private fun ThemeOptionCard(name: String, theme: ThemeOption, selected: Boolean,
                 }
             ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (selected) Elevations.level3 else Elevations.level1
+            // Issue #24: the selected tile's elevation binds to the card component token
+            // (CARD_ELEVATION_SELECTED, level index 3 -> the same 12dp as before). The
+            // unselected 4dp resting tier stays on the foundation scale — the component
+            // tier's CARD_ELEVATION_RESTING is 0dp, which is a different (flat) treatment.
+            defaultElevation = if (selected) CardTokens.selectedElevation else Elevations.level1
         )
     ) {
         Column(

@@ -45,6 +45,28 @@ internal fun tokenDefaultColorScheme(): ColorScheme = darkColorScheme(
     error = Color(DesignTokens.ColorDark.ERROR),
 )
 
+/**
+ * Iteration 4 of the design-token rollout (derekwinters/chores-web-docs#11, this repo's #24):
+ * the `points` color role — the gold accent web applies to numeric point values. [ThemeOption]'s
+ * 9-color wire format carries no points slot, so (like `success`/`warning` via
+ * [LocalThemeOption]) it comes straight from the design-tokens artifact, picking the dark or
+ * light set by the same background-luminance rule [ChoresTheme] uses to pick its base scheme.
+ * Both sets are the same gold today, so the split is future-proofing, not a visible fork.
+ */
+fun pointsColor(themeOption: ThemeOption?): Color {
+    val background = themeOption?.background?.let(::parseHexColor)
+        ?: Color(DesignTokens.ColorDark.BACKGROUND)
+    return if (background.luminance() > 0.5f) {
+        Color(DesignTokens.ColorLight.POINTS)
+    } else {
+        Color(DesignTokens.ColorDark.POINTS)
+    }
+}
+
+/** [pointsColor] against the currently applied theme ([LocalThemeOption]). */
+@Composable
+fun pointsColor(): Color = pointsColor(LocalThemeOption.current)
+
 @Composable
 fun ChoresTheme(themeOption: ThemeOption?, content: @Composable () -> Unit) {
     val colorScheme = if (themeOption == null) {

@@ -32,6 +32,7 @@ import com.derekwinters.chores.data.repository.PointsLogPage
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDateTime
 import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.pointsColor
 
 /**
  * Issue #23: admin table for directly correcting historical point credits — paginated (offset-
@@ -137,7 +138,9 @@ private fun PointsLogRow(entry: PointsLogEntry, onClick: () -> Unit) {
                 // correlate rows during data correction — mirror it in the row metadata line.
                 Text("ID ${entry.id} · Chore #${entry.choreId} · ${formatDateTime(entry.completedAt)}", style = MaterialTheme.typography.bodySmall)
             }
-            Text("${entry.points} pts")
+            // Issue #24: point values render in the design tokens' gold points role, matching
+            // web's points accent.
+            Text("${entry.points} pts", color = pointsColor())
         }
     }
 }
