@@ -6,6 +6,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
+    // Issue #15: Roborazzi snapshot testing (recordRoborazziDebug / verifyRoborazziDebug tasks).
+    // Version is pinned in the root build.gradle.kts plugins block. Goldens live in
+    // app/src/test/snapshots — the path is passed per-capture in ComponentSnapshotTest
+    // (version-stable), not via the plugin's gradle DSL. See docs/snapshot-testing.md.
+    id("io.github.takahirom.roborazzi")
 }
 
 android {
@@ -143,6 +148,12 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.13")
+    // Issue #15: Roborazzi snapshot testing on the Robolectric NATIVE-graphics stack (see
+    // ComponentSnapshotTest and docs/snapshot-testing.md). Versions match the plugin pin in the
+    // root build.gradle.kts.
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.26.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.26.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-junit-rule:1.26.0")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.2.1")
     testImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
