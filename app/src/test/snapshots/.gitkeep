@@ -1,0 +1,3 @@
+# Roborazzi snapshot goldens land here (recorded by .github/workflows/record-snapshots.yml).
+# This placeholder keeps the directory present so the record workflow's `git add` path always
+# exists. See docs/snapshot-testing.md.

@@ -31,6 +31,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Issue #15: Roborazzi compares ComponentSnapshotTest's renders against the goldens in
+      # app/src/test/snapshots (recorded on CI via .github/workflows/record-snapshots.yml), so
+      # unreviewed pixel drift in the tokenized components fails the PR. See
+      # docs/snapshot-testing.md.
+      - name: Verify snapshots (design-token guardrail)
+        # Self-skipping until goldens exist: record-snapshots.yml can only be
+        # dispatched once it's on the default branch, so the first goldens are
+        # recorded right after this merges (bootstrap documented in
+        # docs/snapshot-testing.md).
+        run: |
+          if ls app/src/test/snapshots/*.png >/dev/null 2>&1; then
+            ./gradlew verifyRoborazziDebug
+          else
+            echo "No goldens recorded yet — skipping verify (bootstrap)."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload snapshot diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: snapshot-diffs
+          path: |
+            app/build/outputs/roborazzi/
+            app/src/test/snapshots/*_compare.png
+          if-no-files-found: ignore
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
         env:
