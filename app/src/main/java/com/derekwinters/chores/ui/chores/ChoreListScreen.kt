@@ -52,15 +52,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.data.model.Chore
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.theme.ChoreRowTokens
 import com.derekwinters.chores.ui.theme.LocalThemeOption
 import com.derekwinters.chores.ui.theme.Space
-import com.derekwinters.chores.ui.theme.StrokeWidth
 import com.derekwinters.chores.ui.theme.parseHexColor
+import com.derekwinters.chores.ui.theme.pointsColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -318,7 +318,8 @@ private fun ChoreRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Space.lg, vertical = Space.sm)
+            // Issue #24: chore-row component tokens (same values the Space scale supplied before).
+            .padding(horizontal = ChoreRowTokens.paddingOuterX, vertical = ChoreRowTokens.paddingOuterY)
             .clickable { expanded = !expanded }
     ) {
         // Issue #67: colored left accent bar + due-date color coding on the chore row, matching
@@ -331,16 +332,16 @@ private fun ChoreRow(
             modifier = Modifier
                 .drawBehind {
                     if (accentColor != null) {
-                        drawRect(color = accentColor, size = Size(StrokeWidth.accentBar.toPx(), size.height))
+                        drawRect(color = accentColor, size = Size(ChoreRowTokens.accentBarWidth.toPx(), size.height))
                     }
                 }
                 .padding(
-                    // 20dp = accent-bar inset (bar width + gap), a component-level value; it
-                    // becomes a chore-card component token in Iteration 4 (issue #24).
-                    start = if (accentColor != null) 20.dp else Space.lg,
-                    top = Space.lg,
-                    end = Space.lg,
-                    bottom = Space.lg
+                    // Issue #24: paddingInnerWithBar is the accent-bar inset (bar width + gap),
+                    // now a chore-row component token rather than a commented 20dp literal.
+                    start = if (accentColor != null) ChoreRowTokens.paddingInnerWithBar else ChoreRowTokens.paddingInner,
+                    top = ChoreRowTokens.paddingInner,
+                    end = ChoreRowTokens.paddingInner,
+                    bottom = ChoreRowTokens.paddingInner
                 )
         ) {
             Text(text = chore.name, style = MaterialTheme.typography.titleMedium)
@@ -364,7 +365,7 @@ private fun ChoreRow(
                 // symbols with a contentDescription each (existing show/hide logic unchanged).
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
-                    horizontalArrangement = Arrangement.spacedBy(Space.xs)
+                    horizontalArrangement = Arrangement.spacedBy(ChoreRowTokens.actionGap)
                 ) {
                     if (isCompleting || isPendingAction) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
@@ -494,7 +495,10 @@ private fun ChoreDetailSection(chore: Chore) {
             ChoreMetaItem(
                 modifier = Modifier.fillMaxWidth(0.5f),
                 label = stringResource(R.string.chore_detail_points_label),
-                value = chore.points.toString()
+                value = chore.points.toString(),
+                // Issue #24: numeric point values render in the design tokens' gold points
+                // role, matching web's points accent.
+                valueColor = pointsColor()
             )
             ChoreMetaItem(
                 modifier = Modifier.fillMaxWidth(0.5f),
@@ -514,10 +518,16 @@ private fun ChoreDetailSection(chore: Chore) {
 
 /**
  * Issue #87: one 2-column grid cell -- an uppercase muted label over its value, matching
- * `ChoreCard.css`'s `.meta-label`/`.meta-value`.
+ * `ChoreCard.css`'s `.meta-label`/`.meta-value`. [valueColor] (issue #24) lets the Points cell
+ * apply the gold points role; [Color.Unspecified] keeps the default text color.
  */
 @Composable
-private fun ChoreMetaItem(label: String, value: String, modifier: Modifier = Modifier) {
+private fun ChoreMetaItem(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = Color.Unspecified
+) {
     Column(modifier = modifier) {
         Text(
             text = label.uppercase(),
@@ -527,7 +537,8 @@ private fun ChoreMetaItem(label: String, value: String, modifier: Modifier = Mod
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = valueColor
         )
     }
 }

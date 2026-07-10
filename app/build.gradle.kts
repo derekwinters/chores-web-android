@@ -106,8 +106,9 @@ tasks.withType<Test>().configureEach {
 
 dependencies {
     // Design tokens — pinned exact version, bumped via Dependabot (rollout:
-    // derekwinters/chores-web-docs#11, this repo's #13).
-    implementation("com.derekwinters.chores:design-tokens:0.2.1")
+    // derekwinters/chores-web-docs#11, this repo's #13; 0.3.0 adds the component
+    // tier consumed by Iteration 4, #24).
+    implementation("com.derekwinters.chores:design-tokens:0.3.0")
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.0")

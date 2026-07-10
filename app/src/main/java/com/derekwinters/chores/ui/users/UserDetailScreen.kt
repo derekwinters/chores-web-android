@@ -35,6 +35,7 @@ import com.derekwinters.chores.ui.CurrentUserViewModel
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDate
 import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.pointsColor
 
 /**
  * Issue #17: per-person detail screen — stats, redeem-points flow, redemption history, and a
@@ -128,13 +129,14 @@ fun UserDetailContent(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     // Issue #113: web bolds and accent-colors the redemption amount so it
-                                    // stands out from the row's other fields; mirrors that here with the
-                                    // same tertiary accent used by #101/#110 elsewhere on this screen.
+                                    // stands out from the row's other fields. Issue #24: the accent is now
+                                    // the design tokens' gold points role (matching web's points accent)
+                                    // rather than the theme's tertiary slot.
                                     Text(
                                         text = "${redemption.amount} pts",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.tertiary,
+                                        color = pointsColor(),
                                         modifier = Modifier.testTag("redemptionAmountEmphasis")
                                     )
                                     Text("by ${redemption.redeemedBy}", style = MaterialTheme.typography.bodyMedium)
@@ -210,9 +212,10 @@ private fun StatLine(label: String, value: Int) {
 /**
  * Issue #101: "Available points" is User Detail's headline figure — chores-web renders it with a
  * hero/elevated treatment, visually distinct from every other equal-weight [StatLine]. Mirrors
- * that here with a large, accent-colored (`colorScheme.tertiary`, this app's mapped "accent" slot
- * — see [com.derekwinters.chores.ui.theme.ChoresTheme]) display number, marked as a semantic
- * heading so assistive tech and tests can tell it apart from the plain stat rows.
+ * that here with a large display number, marked as a semantic heading so assistive tech and
+ * tests can tell it apart from the plain stat rows. Issue #24: the number's accent is the design
+ * tokens' gold points role (matching web's points accent), replacing the earlier
+ * `colorScheme.tertiary` stand-in.
  */
 @Composable
 private fun HeroStat(label: String, value: Int) {
@@ -225,7 +228,7 @@ private fun HeroStat(label: String, value: Int) {
         Text(
             text = value.toString(),
             style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.tertiary,
+            color = pointsColor(),
             modifier = Modifier.semantics { heading() }
         )
     }
@@ -236,7 +239,8 @@ private fun HeroStat(label: String, value: Int) {
  * chores-web — matching #107's admin/positive-balance gating on the button that opens this
  * dialog. The first step collects and validates the amount; only advancing to an explicit
  * second step, which restates the amount and the available-points balance in the same accent
- * color as [HeroStat] (`colorScheme.tertiary`), actually submits via [onConfirm]. Dismissing the
+ * color as [HeroStat] (the gold points role, issue #24), actually submits via [onConfirm].
+ * Dismissing the
  * dialog (scrim tap / system back) at either step, or tapping "Back" at the confirm step, closes
  * or rewinds without ever calling [onConfirm].
  */
@@ -289,7 +293,7 @@ private fun RedeemDialog(
                     Text("Redeem $confirmedAmount points?")
                     Text(
                         text = "Available points: $availablePoints",
-                        color = MaterialTheme.colorScheme.tertiary,
+                        color = pointsColor(),
                         modifier = Modifier.testTag("redeemConfirmAvailablePoints")
                     )
                 }

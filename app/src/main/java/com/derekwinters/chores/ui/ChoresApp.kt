@@ -87,11 +87,11 @@ import com.derekwinters.chores.ui.settings.SettingsChoresScreen
 import com.derekwinters.chores.ui.settings.SettingsGeneralScreen
 import com.derekwinters.chores.ui.settings.SettingsMenuContent
 import com.derekwinters.chores.ui.theme.AppThemeViewModel
-import com.derekwinters.chores.ui.theme.AvatarSize
 import com.derekwinters.chores.ui.theme.ChoresTheme
 import com.derekwinters.chores.ui.theme.Space
 import com.derekwinters.chores.ui.theme.ThemeAdminScreen
 import com.derekwinters.chores.ui.theme.ThemePreferenceScreen
+import com.derekwinters.chores.ui.theme.TopBarTokens
 import com.derekwinters.chores.ui.settings.SettingsNavActions
 import com.derekwinters.chores.ui.settings.SettingsScreen
 import com.derekwinters.chores.ui.users.UserDetailScreen
@@ -417,6 +417,8 @@ private fun ChoresAuthenticatedScaffold(
     Scaffold(
         modifier = modifier,
         topBar = {
+            // Issue #24: M3 TopAppBar's default container height (64dp) already equals
+            // DesignTokens.Component.TOP_BAR_HEIGHT, so no height override is needed.
             TopAppBar(
                 title = {
                     Column {
@@ -447,7 +449,9 @@ private fun ChoresAuthenticatedScaffold(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .padding(start = Space.md)
-                            .size(AvatarSize.md)
+                            // Issue #24: the top bar's avatar binds to the component-tier token
+                            // (same 32dp the foundation Avatar.MD supplied before).
+                            .size(TopBarTokens.avatarSize)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.tertiary)
                             .testTag("userMenuTrigger")
