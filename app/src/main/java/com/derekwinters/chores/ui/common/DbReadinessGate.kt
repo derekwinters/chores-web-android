@@ -11,8 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.derekwinters.chores.R
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #11: shows a "Database initializing…" state while [isReady] is false, then reveals
@@ -27,13 +27,13 @@ fun DbReadinessGate(isReady: Boolean, modifier: Modifier = Modifier, content: @C
     }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().padding(Space.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         CircularProgressIndicator()
         Text(
-            modifier = Modifier.padding(top = 16.dp),
+            modifier = Modifier.padding(top = Space.lg),
             text = stringResource(R.string.database_initializing),
             style = MaterialTheme.typography.bodyMedium
         )

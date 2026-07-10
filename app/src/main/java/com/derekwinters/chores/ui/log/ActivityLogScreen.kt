@@ -47,7 +47,10 @@ import com.derekwinters.chores.data.model.LogEntry
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDateTime
 import com.derekwinters.chores.ui.common.humanizeActionLabel
+import com.derekwinters.chores.tokens.DesignTokens
 import com.derekwinters.chores.ui.theme.LocalThemeOption
+import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.TokenAlpha
 import com.derekwinters.chores.ui.theme.parseHexColor
 import java.time.Duration
 import java.time.Instant
@@ -90,16 +93,16 @@ fun ActivityLogContent(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(Space.sm)) {
             OutlinedTextField(
-                modifier = Modifier.weight(1f).padding(end = 4.dp),
+                modifier = Modifier.weight(1f).padding(end = Space.xs),
                 value = filters.person.orEmpty(),
                 onValueChange = { value -> onFiltersChange(filters.copy(person = value.ifBlank { null })) },
                 label = { Text("Person") },
                 singleLine = true
             )
             OutlinedTextField(
-                modifier = Modifier.weight(1f).padding(start = 4.dp),
+                modifier = Modifier.weight(1f).padding(start = Space.xs),
                 value = filters.chore.orEmpty(),
                 onValueChange = { value -> onFiltersChange(filters.copy(chore = value.ifBlank { null })) },
                 label = { Text("Chore") },
@@ -110,15 +113,15 @@ fun ActivityLogContent(
         // Issue #68: date-range filters, same read-only-field + trailing-icon DatePickerDialog
         // convention as the Chore form's "Next Due" date picker (issue #16) rather than inventing
         // new date-input UI.
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = Space.sm)) {
             DateFilterField(
-                modifier = Modifier.weight(1f).padding(end = 4.dp).testTag("startDateFilter"),
+                modifier = Modifier.weight(1f).padding(end = Space.xs).testTag("startDateFilter"),
                 label = "Start Date",
                 value = filters.start,
                 onValueChange = { date -> onFiltersChange(filters.copy(start = date)) }
             )
             DateFilterField(
-                modifier = Modifier.weight(1f).padding(start = 4.dp).testTag("endDateFilter"),
+                modifier = Modifier.weight(1f).padding(start = Space.xs).testTag("endDateFilter"),
                 label = "End Date",
                 value = filters.end,
                 onValueChange = { date -> onFiltersChange(filters.copy(end = date)) }
@@ -132,21 +135,21 @@ fun ActivityLogContent(
         // Option labels reuse [humanizeActionLabel] so they match the row display text established
         // by issue #73, rather than showing raw snake_case action values.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())
             ) {
                 FilterChip(
-                    modifier = Modifier.padding(end = 4.dp),
+                    modifier = Modifier.padding(end = Space.xs),
                     selected = filters.action == null,
                     onClick = { onFiltersChange(filters.copy(action = null)) },
                     label = { Text("All") }
                 )
                 LOG_ACTION_TYPES.forEach { action ->
                     FilterChip(
-                        modifier = Modifier.padding(end = 4.dp),
+                        modifier = Modifier.padding(end = Space.xs),
                         selected = filters.action == action,
                         onClick = { onFiltersChange(filters.copy(action = action)) },
                         label = { Text(humanizeActionLabel(action)) }
@@ -168,7 +171,7 @@ fun ActivityLogContent(
             when (uiState) {
                 is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 is UiState.Error -> Text(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                     text = uiState.message,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -187,7 +190,7 @@ fun ActivityLogContent(
 
         if (uiState is UiState.Success) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(Space.sm),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 TextButton(onClick = onPreviousPage, enabled = uiState.data.page > 1) { Text("Previous") }
@@ -286,10 +289,10 @@ private fun LogRow(entry: LogEntry) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = Space.sm, vertical = Space.xs)
             .clickable { expanded = !expanded }
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(Space.md)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -301,13 +304,13 @@ private fun LogRow(entry: LogEntry) {
                         testTag = "targetTypeChip"
                     )
                     PillBadge(
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = Space.xs),
                         text = humanizeActionLabel(entry.action),
                         color = actionBadgeColor(entry.action),
                         testTag = "actionBadge"
                     )
                     PillBadge(
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = Space.xs),
                         text = targetName,
                         color = targetBadgeColor(isPersonTarget),
                         testTag = "targetBadge"
@@ -317,7 +320,7 @@ private fun LogRow(entry: LogEntry) {
                         style = MaterialTheme.typography.bodySmall,
                         color = agedTimestampColor(entry.timestamp),
                         modifier = Modifier
-                            .padding(top = 4.dp)
+                            .padding(top = Space.xs)
                             .testTag("logRowTimestamp")
                     )
                 }
@@ -366,14 +369,16 @@ private fun PillBadge(text: String, color: Color, modifier: Modifier = Modifier,
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(percent = 50),
-        color = color.copy(alpha = 0.15f),
+        color = color.copy(alpha = TokenAlpha.tint),
         contentColor = color
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                // 10dp horizontal inset is the pill badge's component-level padding; it
+                // becomes a badge component token in Iteration 4 (issue #24), not snapped.
+                .padding(horizontal = 10.dp, vertical = Space.xs)
                 .let { base -> if (testTag != null) base.testTag(testTag) else base }
         )
     }
@@ -395,7 +400,7 @@ private fun actionBadgeColor(action: String): Color {
     return when (action) {
         "completed", "created" -> themeOption?.success?.let(::parseHexColor) ?: MaterialTheme.colorScheme.primary
         "skipped", "reassigned", "password_changed", "password_reset" ->
-            themeOption?.warning?.let(::parseHexColor) ?: Color(0xFFF9A825)
+            themeOption?.warning?.let(::parseHexColor) ?: Color(DesignTokens.ColorDark.WARNING)
         "deleted" -> themeOption?.error?.let(::parseHexColor) ?: MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -458,7 +463,7 @@ private fun isAgedTimestamp(raw: String): Boolean {
  * otherwise so the `Text` falls back to its normal default color. Reuses the same
  * [LocalThemeOption]/`error`/`parseHexColor` lookup (falling back to
  * `MaterialTheme.colorScheme.error`) already established by #71's `actionBadgeColor` for the
- * "deleted" action, rather than inventing a new red -- a reduced-alpha (0.7f) variant of that
+ * "deleted" action, rather than inventing a new red -- a reduced-alpha (muted) variant of that
  * color gives the "muted" (lower-emphasis) treatment web uses instead of a full-strength,
  * alarm-toned red.
  */
@@ -467,5 +472,5 @@ private fun agedTimestampColor(raw: String): Color {
     if (!isAgedTimestamp(raw)) return Color.Unspecified
     val themeOption = LocalThemeOption.current
     val errorColor = themeOption?.error?.let(::parseHexColor) ?: MaterialTheme.colorScheme.error
-    return errorColor.copy(alpha = 0.7f)
+    return errorColor.copy(alpha = TokenAlpha.muted)
 }

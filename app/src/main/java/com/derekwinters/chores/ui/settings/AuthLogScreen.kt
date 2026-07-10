@@ -20,12 +20,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.AuthLogEntry
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDateTime
 import com.derekwinters.chores.ui.common.humanizeActionLabel
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #21: admin-only audit log for auth-related events, separate from the chore Activity Log.
@@ -58,16 +58,16 @@ fun AuthLogContent(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         // Username and Action filter row
-        Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(Space.sm)) {
             OutlinedTextField(
-                modifier = Modifier.weight(1f).padding(end = 4.dp),
+                modifier = Modifier.weight(1f).padding(end = Space.xs),
                 value = filters.username.orEmpty(),
                 onValueChange = { value -> onFiltersChange(filters.copy(username = value.ifBlank { null })) },
                 label = { Text("Username") },
                 singleLine = true
             )
             OutlinedTextField(
-                modifier = Modifier.weight(1f).padding(start = 4.dp),
+                modifier = Modifier.weight(1f).padding(start = Space.xs),
                 value = filters.action.orEmpty(),
                 onValueChange = { value -> onFiltersChange(filters.copy(action = value.ifBlank { null })) },
                 label = { Text("Action") },
@@ -76,16 +76,16 @@ fun AuthLogContent(
         }
 
         // Date range filter row
-        Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(Space.sm)) {
             OutlinedTextField(
-                modifier = Modifier.weight(1f).padding(end = 4.dp),
+                modifier = Modifier.weight(1f).padding(end = Space.xs),
                 value = filters.start.orEmpty(),
                 onValueChange = { value -> onFiltersChange(filters.copy(start = value.ifBlank { null })) },
                 label = { Text("Start Date") },
                 singleLine = true
             )
             OutlinedTextField(
-                modifier = Modifier.weight(1f).padding(start = 4.dp),
+                modifier = Modifier.weight(1f).padding(start = Space.xs),
                 value = filters.end.orEmpty(),
                 onValueChange = { value -> onFiltersChange(filters.copy(end = value.ifBlank { null })) },
                 label = { Text("End Date") },
@@ -94,7 +94,7 @@ fun AuthLogContent(
         }
 
         // Clear filters button
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = Space.sm, vertical = Space.xs)) {
             TextButton(
                 onClick = { onFiltersChange(AuthLogFilters()) }
             ) {
@@ -106,7 +106,7 @@ fun AuthLogContent(
             when (uiState) {
                 is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 is UiState.Error -> Text(
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                     text = uiState.message,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -124,7 +124,7 @@ fun AuthLogContent(
         }
 
         if (uiState is UiState.Success) {
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth().padding(Space.sm), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = onPreviousPage, enabled = uiState.data.page > 1) { Text("Previous") }
                 Text("Page ${uiState.data.page} of ${uiState.data.totalPages}")
                 TextButton(onClick = onNextPage, enabled = uiState.data.page < uiState.data.totalPages) { Text("Next") }
@@ -135,8 +135,8 @@ fun AuthLogContent(
 
 @Composable
 private fun AuthLogRow(entry: AuthLogEntry) {
-    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = Space.sm, vertical = Space.xs)) {
+        Column(modifier = Modifier.padding(Space.md)) {
             Text(humanizeActionLabel(entry.action), style = MaterialTheme.typography.titleSmall)
             Text(entry.username, style = MaterialTheme.typography.bodyMedium)
             Text(formatDateTime(entry.timestamp), style = MaterialTheme.typography.bodySmall)

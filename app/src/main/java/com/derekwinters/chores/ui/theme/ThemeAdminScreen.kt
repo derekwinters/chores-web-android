@@ -37,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.ThemeOption
 import com.derekwinters.chores.ui.UiState
@@ -87,12 +86,12 @@ fun ThemeAdminContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
             is UiState.Success -> {
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(Space.lg)) {
                     items(uiState.data, key = { it.id }) { theme ->
                         ThemeRow(
                             theme = theme,
@@ -105,7 +104,7 @@ fun ThemeAdminContent(
                 }
                 FloatingActionButton(
                     onClick = { showCreateDialog = true },
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(Space.lg)
                 ) { Icon(Icons.Filled.Add, contentDescription = "Create theme") }
             }
         }
@@ -166,18 +165,18 @@ private fun ThemeRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = Space.xs)
             .clickable(onClick = onSetDefault)
             .then(
                 if (isActive) {
-                    Modifier.shadow(elevation = 12.dp, shape = RoundedCornerShape(12.dp))
+                    Modifier.shadow(elevation = Elevations.level3, shape = RoundedCornerShape(Corner.md))
                 } else {
                     Modifier
                 }
             )
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(Space.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -185,13 +184,13 @@ private fun ThemeRow(
                 listOf(theme.primary, theme.secondary, theme.accent, theme.background).forEach { hex ->
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .padding(4.dp)
-                            .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                            .background(parseHexColor(hex), RoundedCornerShape(8.dp))
+                            .size(Space.xxxl)
+                            .padding(Space.xs)
+                            .border(StrokeWidth.emphasis, MaterialTheme.colorScheme.outline, RoundedCornerShape(Corner.sm))
+                            .background(parseHexColor(hex), RoundedCornerShape(Corner.sm))
                     )
                 }
-                Text(theme.name, modifier = Modifier.padding(start = 8.dp))
+                Text(theme.name, modifier = Modifier.padding(start = Space.sm))
             }
             Row {
                 TextButton(onClick = onCopy) { Text("Copy") }
@@ -255,7 +254,7 @@ private fun EditThemeDialog(
                 )
                 colorLabels.forEachIndexed { index, label ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
@@ -268,10 +267,10 @@ private fun EditThemeDialog(
                         )
                         Box(
                             modifier = Modifier
-                                .padding(start = 8.dp)
-                                .size(40.dp)
-                                .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                                .background(parseHexColor(colorValues[index]), RoundedCornerShape(8.dp))
+                                .padding(start = Space.sm)
+                                .size(Space.xxxl)
+                                .border(StrokeWidth.emphasis, MaterialTheme.colorScheme.outline, RoundedCornerShape(Corner.sm))
+                                .background(parseHexColor(colorValues[index]), RoundedCornerShape(Corner.sm))
                         )
                     }
                 }

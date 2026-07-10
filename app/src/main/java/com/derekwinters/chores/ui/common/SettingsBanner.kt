@@ -13,6 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.derekwinters.chores.tokens.DesignTokens
+import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.TokenAlpha
 
 /**
  * A reusable banner component for displaying error and success messages in Settings screens.
@@ -28,14 +31,17 @@ fun SettingsBanner(
 ) {
     val colors = when (type) {
         BannerType.ERROR -> BannerColors(
-            backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+            backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = TokenAlpha.tint),
             borderColor = MaterialTheme.colorScheme.error,
             textColor = MaterialTheme.colorScheme.error
         )
+        // Issue #23: success has no first-class Material3 ColorScheme slot (see ChoresTheme's
+        // doc), so the hardcoded greens are retired in favor of the design-token success role,
+        // tinted for the fill like web's banner treatment.
         BannerType.SUCCESS -> BannerColors(
-            backgroundColor = Color(0xFF4CAF50).copy(alpha = 0.15f),  // Success green
-            borderColor = Color(0xFF4CAF50),
-            textColor = Color(0xFF2E7D32)  // Darker green for better contrast
+            backgroundColor = Color(DesignTokens.ColorDark.SUCCESS).copy(alpha = TokenAlpha.tint),
+            borderColor = Color(DesignTokens.ColorDark.SUCCESS),
+            textColor = Color(DesignTokens.ColorDark.SUCCESS)
         )
     }
 
@@ -43,7 +49,7 @@ fun SettingsBanner(
         modifier = modifier
             .testTag(if (type == BannerType.ERROR) "ErrorBanner" else "SuccessBanner")
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = Space.sm)
             .border(
                 width = 1.dp,
                 color = colors.borderColor,
@@ -53,7 +59,7 @@ fun SettingsBanner(
                 color = colors.backgroundColor,
                 shape = MaterialTheme.shapes.small
             )
-            .padding(12.dp)
+            .padding(Space.md)
     ) {
         Text(
             text = message,

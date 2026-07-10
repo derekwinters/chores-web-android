@@ -19,8 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.derekwinters.chores.R
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #13 behavior: "Filters: schedule type, assignment type, assignee (multi-select,
@@ -125,7 +125,7 @@ fun ChoreFiltersDialog(
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text = text, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+    Text(text = text, modifier = Modifier.padding(top = Space.md, bottom = Space.xs))
 }
 
 @Composable
@@ -134,10 +134,10 @@ private fun RadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, onClick = onClick)
-            .padding(vertical = 2.dp)
+            .padding(vertical = Space.xxs)
     ) {
         RadioButton(selected = selected, onClick = onClick)
-        Text(text = label, modifier = Modifier.padding(start = 8.dp))
+        Text(text = label, modifier = Modifier.padding(start = Space.sm))
     }
 }
 
@@ -147,9 +147,9 @@ private fun CheckboxRow(label: String, checked: Boolean, onCheckedChange: (Boole
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = checked, onClick = { onCheckedChange(!checked) })
-            .padding(vertical = 2.dp)
+            .padding(vertical = Space.xxs)
     ) {
         Checkbox(checked = checked, onCheckedChange = onCheckedChange)
-        Text(text = label, modifier = Modifier.padding(start = 8.dp))
+        Text(text = label, modifier = Modifier.padding(start = Space.sm))
     }
 }

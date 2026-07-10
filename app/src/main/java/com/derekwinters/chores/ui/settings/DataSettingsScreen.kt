@@ -26,11 +26,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.BannerType
 import com.derekwinters.chores.ui.common.SettingsBanner
+import com.derekwinters.chores.ui.theme.Space
 import kotlinx.coroutines.launch
 
 /** Issue #22: cross-screen nav callback the Data settings destination needs. */
@@ -149,20 +149,20 @@ fun DataSettingsContent(
     onNavigateToPointsLog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
-        Divider(modifier = Modifier.padding(bottom = 16.dp))
+    Column(modifier = modifier.fillMaxWidth().padding(Space.lg)) {
+        Divider(modifier = Modifier.padding(bottom = Space.lg))
         Text("Data", style = MaterialTheme.typography.titleMedium)
 
         // ========== Export & Import Section ==========
-        Text("Export & Import", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp))
+        Text("Export & Import", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Space.lg))
         Text(
             "Back up your data by exporting to a file, or restore from a previous backup by importing.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = Space.sm)
         )
 
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = Space.md), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
             Column(modifier = Modifier.weight(1f)) {
                 Button(onClick = onExportClick, modifier = Modifier.fillMaxWidth()) {
                     Text("Export Backup")
@@ -171,7 +171,7 @@ fun DataSettingsContent(
                     "Download your data as a JSON file for backup or migration purposes",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = Space.xs)
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
@@ -182,7 +182,7 @@ fun DataSettingsContent(
                     "Upload a previously exported JSON file to restore or migrate your data",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = Space.xs)
                 )
             }
         }
@@ -193,7 +193,7 @@ fun DataSettingsContent(
                 "Selected: $selectedImportFilename",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 12.dp)
+                modifier = Modifier.padding(top = Space.md)
             )
         }
 
@@ -202,36 +202,36 @@ fun DataSettingsContent(
             SettingsBanner(
                 message = "Data exported successfully to: ${exportFilename ?: "file"}",
                 type = BannerType.SUCCESS,
-                modifier = Modifier.padding(top = 12.dp)
+                modifier = Modifier.padding(top = Space.md)
             )
         } else if (exportState is UiState.Error) {
             SettingsBanner(
                 message = exportState.message,
                 type = BannerType.ERROR,
-                modifier = Modifier.padding(top = 12.dp)
+                modifier = Modifier.padding(top = Space.md)
             )
         }
 
         // ========== Log Retention Section ==========
-        Divider(modifier = Modifier.padding(top = 16.dp, bottom = 16.dp))
+        Divider(modifier = Modifier.padding(top = Space.lg, bottom = Space.lg))
         Text("Log Retention", style = MaterialTheme.typography.titleSmall)
         Text(
             "Control how long activity logs are kept. Older entries will be automatically deleted.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = Space.sm)
         )
 
         if (logRetentionInput.isNotEmpty()) {
             OutlinedTextField(
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = Space.md),
                 value = logRetentionInput,
                 onValueChange = onLogRetentionChange,
                 label = { Text("Days to keep log entries") }
             )
         }
 
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = Space.md), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
             Button(onClick = onSaveLogRetention, modifier = Modifier.weight(1f)) {
                 Text("Save")
             }
@@ -241,33 +241,33 @@ fun DataSettingsContent(
             SettingsBanner(
                 message = "Log retention updated to ${logRetentionState.data} days",
                 type = BannerType.SUCCESS,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = Space.sm)
             )
-            TextButton(onClick = onClearLogRetentionState, modifier = Modifier.padding(top = 0.dp)) {
+            TextButton(onClick = onClearLogRetentionState, modifier = Modifier.padding(top = Space.none)) {
                 Text("OK")
             }
         } else if (logRetentionState is UiState.Error) {
             SettingsBanner(
                 message = logRetentionState.message,
                 type = BannerType.ERROR,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = Space.sm)
             )
-            TextButton(onClick = onClearLogRetentionState, modifier = Modifier.padding(top = 0.dp)) {
+            TextButton(onClick = onClearLogRetentionState, modifier = Modifier.padding(top = Space.none)) {
                 Text("OK")
             }
         }
 
         // ========== Data Management Section ==========
-        Divider(modifier = Modifier.padding(top = 16.dp, bottom = 16.dp))
+        Divider(modifier = Modifier.padding(top = Space.lg, bottom = Space.lg))
         Text("Data Management", style = MaterialTheme.typography.titleSmall)
         Text(
             "Access detailed information about your activity logs.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = Space.sm)
         )
 
-        TextButton(modifier = Modifier.padding(top = 12.dp), onClick = onNavigateToPointsLog) {
+        TextButton(modifier = Modifier.padding(top = Space.md), onClick = onNavigateToPointsLog) {
             Text("Admin Points Log")
         }
 
@@ -276,11 +276,11 @@ fun DataSettingsContent(
                 message = "Imported ${importState.data.peopleCount} people, ${importState.data.choresCount} chores, " +
                     "${importState.data.settingsCount} settings",
                 type = BannerType.SUCCESS,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = Space.lg)
             )
             TextButton(onClick = onDismissImportResult) { Text("OK") }
         } else if (importState is UiState.Error) {
-            SettingsBanner(message = importState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = 16.dp))
+            SettingsBanner(message = importState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = Space.lg))
             TextButton(onClick = onDismissImportResult) { Text("OK") }
         }
     }

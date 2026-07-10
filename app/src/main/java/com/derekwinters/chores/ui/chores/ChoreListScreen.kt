@@ -58,6 +58,8 @@ import com.derekwinters.chores.R
 import com.derekwinters.chores.data.model.Chore
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.theme.LocalThemeOption
+import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.StrokeWidth
 import com.derekwinters.chores.ui.theme.parseHexColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -183,7 +185,7 @@ fun ChoreListContent(
         // filters were active), matching web's always-visible count. "Clear filters" remains
         // conditional -- it wouldn't make sense to offer clearing filters that aren't active.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.lg),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -213,7 +215,7 @@ fun ChoreListContent(
                     Text(
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .padding(24.dp),
+                            .padding(Space.xl),
                         text = state.message,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -316,7 +318,7 @@ private fun ChoreRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = Space.lg, vertical = Space.sm)
             .clickable { expanded = !expanded }
     ) {
         // Issue #67: colored left accent bar + due-date color coding on the chore row, matching
@@ -329,14 +331,16 @@ private fun ChoreRow(
             modifier = Modifier
                 .drawBehind {
                     if (accentColor != null) {
-                        drawRect(color = accentColor, size = Size(4.dp.toPx(), size.height))
+                        drawRect(color = accentColor, size = Size(StrokeWidth.accentBar.toPx(), size.height))
                     }
                 }
                 .padding(
-                    start = if (accentColor != null) 20.dp else 16.dp,
-                    top = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
+                    // 20dp = accent-bar inset (bar width + gap), a component-level value; it
+                    // becomes a chore-card component token in Iteration 4 (issue #24).
+                    start = if (accentColor != null) 20.dp else Space.lg,
+                    top = Space.lg,
+                    end = Space.lg,
+                    bottom = Space.lg
                 )
         ) {
             Text(text = chore.name, style = MaterialTheme.typography.titleMedium)
@@ -359,11 +363,11 @@ private fun ChoreRow(
                 // web's icon-button treatment -- not full-color emoji icons, plain Material
                 // symbols with a contentDescription each (existing show/hide logic unchanged).
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs)
                 ) {
                     if (isCompleting || isPendingAction) {
-                        CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
                     } else {
                         if (chore.isDue) {
                             // Issue #93/#162: success/green tint, sourced from the theme's
@@ -472,9 +476,9 @@ private fun formatNextDue(raw: String): String {
  */
 @Composable
 private fun ChoreDetailSection(chore: Chore) {
-    Column(modifier = Modifier.padding(top = 8.dp)) {
+    Column(modifier = Modifier.padding(top = Space.sm)) {
         HorizontalDivider()
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = Space.sm)) {
             ChoreMetaItem(
                 modifier = Modifier.fillMaxWidth(0.5f),
                 label = stringResource(R.string.chore_detail_status_label),
@@ -486,7 +490,7 @@ private fun ChoreDetailSection(chore: Chore) {
                 value = chore.scheduleSummary ?: "—"
             )
         }
-        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = Space.sm)) {
             ChoreMetaItem(
                 modifier = Modifier.fillMaxWidth(0.5f),
                 label = stringResource(R.string.chore_detail_points_label),
@@ -558,7 +562,7 @@ private fun ChoreFilterIconRow(
     var searchExpanded by remember { mutableStateOf(filters.query.isNotEmpty()) }
 
     Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = Space.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (searchExpanded) {

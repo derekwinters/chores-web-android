@@ -27,10 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.theme.Corner
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #14: collapsible stats panel above the Chores list. Defaults to expanded; the
@@ -61,12 +62,12 @@ fun ChoresStatsPanelContent(
     var expanded by remember { mutableStateOf(initiallyExpanded) }
 
     Card(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = Space.lg, vertical = Space.sm),
         // See DashboardScreen's per-person Card for why: custom themes' surface/background
         // colors can be too close in tone to rely on Material's default elevation contrast.
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(Space.md)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -88,8 +89,8 @@ fun ChoresStatsPanelContent(
                         val stats = uiState.data
                         // Issue #75: 2x2 grid of accent-colored stat tiles, matching web's
                         // `.chore-stat-card` grid layout (previously stacked label/value rows).
-                        Column(modifier = Modifier.padding(top = 8.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(top = Space.sm)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                                 StatTile(
                                     modifier = Modifier.weight(1f),
                                     label = stringResource(R.string.stat_total_chores),
@@ -102,8 +103,8 @@ fun ChoresStatsPanelContent(
                                 )
                             }
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
+                                horizontalArrangement = Arrangement.spacedBy(Space.sm)
                             ) {
                                 StatTile(
                                     modifier = Modifier.weight(1f),
@@ -130,9 +131,9 @@ fun ChoresStatsPanelContent(
 private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(Corner.sm))
             .background(MaterialTheme.colorScheme.tertiaryContainer)
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+            .padding(vertical = Space.md, horizontal = Space.sm),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(

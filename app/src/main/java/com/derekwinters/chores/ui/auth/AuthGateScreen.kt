@@ -23,11 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.ui.login.LoginScreen
 import com.derekwinters.chores.ui.setup.SetupScreen
+import com.derekwinters.chores.ui.theme.IconSize
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Entry point shown while signed out (issue #11): asks for the server URL first, checks
@@ -73,12 +74,12 @@ fun AuthGateContent(
             onCheckServer = onCheckServer
         )
         is AuthGateState.Error -> Column(
-            modifier = modifier.fillMaxSize().padding(24.dp),
+            modifier = modifier.fillMaxSize().padding(Space.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(text = state.message, color = MaterialTheme.colorScheme.error)
-            TextButton(modifier = Modifier.padding(top = 8.dp), onClick = onRetry) {
+            TextButton(modifier = Modifier.padding(top = Space.sm), onClick = onRetry) {
                 Text(stringResource(R.string.retry))
             }
         }
@@ -94,14 +95,14 @@ private fun ServerUrlEntry(
     var serverUrl by remember { mutableStateOf("") }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().padding(Space.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
 
         OutlinedTextField(
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Space.xl),
             value = serverUrl,
             onValueChange = { serverUrl = it },
             label = { Text(stringResource(R.string.server_url_label)) },
@@ -112,12 +113,12 @@ private fun ServerUrlEntry(
         )
 
         Button(
-            modifier = Modifier.padding(top = 16.dp),
+            modifier = Modifier.padding(top = Space.lg),
             onClick = { onCheckServer(serverUrl) },
             enabled = !isChecking && serverUrl.isNotBlank()
         ) {
             if (isChecking) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp).padding(end = 8.dp))
+                CircularProgressIndicator(modifier = Modifier.size(IconSize.sm).padding(end = Space.sm))
             }
             Text(stringResource(R.string.continue_button))
         }

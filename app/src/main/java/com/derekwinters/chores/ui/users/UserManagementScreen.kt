@@ -44,12 +44,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.R
 import com.derekwinters.chores.data.model.Person
 import com.derekwinters.chores.ui.UiState
+import com.derekwinters.chores.ui.theme.AvatarSize
+import com.derekwinters.chores.ui.theme.Space
+import com.derekwinters.chores.ui.theme.StrokeWidth
 
 /**
  * Issue #18: admin-only user management — list grouped Administrators/Members, create, edit,
@@ -96,14 +98,14 @@ fun UserManagementContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
             is UiState.Success -> {
                 val admins = uiState.data.filter { it.isAdmin }
                 val members = uiState.data.filter { !it.isAdmin }
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(Space.lg)) {
                     item { SectionHeader("Administrators") }
                     if (admins.isEmpty()) {
                         item { Text("No administrators") }
@@ -117,7 +119,7 @@ fun UserManagementContent(
                             )
                         }
                     }
-                    item { SectionHeader("Members", modifier = Modifier.padding(top = 16.dp)) }
+                    item { SectionHeader("Members", modifier = Modifier.padding(top = Space.lg)) }
                     if (members.isEmpty()) {
                         item { Text("No members") }
                     } else {
@@ -136,7 +138,7 @@ fun UserManagementContent(
                 // consistent with the Chores List's labeled "Add Chore" FAB (issue #70).
                 ExtendedFloatingActionButton(
                     onClick = { showCreateDialog = true },
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(Space.lg),
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                     text = { Text(stringResource(R.string.add_user)) }
                 )
@@ -198,9 +200,9 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         )
         Box(
             modifier = Modifier
-                .padding(top = 4.dp)
-                .width(32.dp)
-                .height(2.dp)
+                .padding(top = Space.xs)
+                .width(Space.xxl)
+                .height(StrokeWidth.emphasis)
                 .background(MaterialTheme.colorScheme.primary)
         )
     }
@@ -217,15 +219,15 @@ private fun PersonRow(
     // flow, so Delete is a directly visible/actionable row control rather than buried in a dialog.
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(Space.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(modifier = Modifier.clickableRow(onEditClick), verticalAlignment = Alignment.CenterVertically) {
                 PersonAvatar(person)
-                Column(modifier = Modifier.padding(start = 12.dp)) {
+                Column(modifier = Modifier.padding(start = Space.md)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             person.displayName,
@@ -235,7 +237,7 @@ private fun PersonRow(
                         )
                         RolePill(
                             isAdmin = person.isAdmin,
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier = Modifier.padding(start = Space.sm),
                             textTestTag = "personRolePill_${person.id}"
                         )
                     }
@@ -286,7 +288,7 @@ private fun PersonAvatar(person: Person, modifier: Modifier = Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(40.dp)
+            .size(AvatarSize.lg)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.tertiary)
     ) {
@@ -325,7 +327,7 @@ private fun RolePill(isAdmin: Boolean, modifier: Modifier = Modifier, textTestTa
         modifier = modifier
             .clip(RoundedCornerShape(50))
             .background(containerColor)
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .padding(horizontal = Space.sm, vertical = Space.xxs)
     ) {
         Text(
             label,

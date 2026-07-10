@@ -26,12 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.AppConfig
 import com.derekwinters.chores.data.model.UpdateCheckStatus
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.formatDateTime
+import com.derekwinters.chores.ui.theme.Space
 
 /** Issue #20/#21/#22/#24: cross-screen nav callbacks the Settings destination needs. */
 data class SettingsNavActions(
@@ -95,7 +95,7 @@ fun SettingsContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
@@ -103,25 +103,25 @@ fun SettingsContent(
                 var draft by remember(uiState.data) { mutableStateOf(uiState.data) }
                 val isSaving = saveState is UiState.Loading
 
-                Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.lg)) {
                     Text("General", style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         value = draft.appTitle,
                         onValueChange = { draft = draft.copy(appTitle = it) },
                         label = { Text("App Title") }
                     )
                     OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         value = draft.timezone,
                         onValueChange = { draft = draft.copy(timezone = it) },
                         label = { Text("Timezone") }
                     )
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    Divider(modifier = Modifier.padding(vertical = Space.lg))
                     Text("Auth", style = MaterialTheme.typography.titleMedium)
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Require Authentication")
@@ -129,30 +129,30 @@ fun SettingsContent(
                     }
                     TextButton(onClick = navActions.onNavigateToAuthLog) { Text("Auth Event Log") }
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    Divider(modifier = Modifier.padding(vertical = Space.lg))
                     Text("Chores", style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         value = draft.dueSoonDays.toString(),
                         onValueChange = { value -> value.toIntOrNull()?.let { draft = draft.copy(dueSoonDays = it) } },
                         label = { Text("Notify when due in — N days") }
                     )
                     OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         value = draft.dueTimeHour.toString(),
                         onValueChange = { value -> value.toIntOrNull()?.let { draft = draft.copy(dueTimeHour = it) } },
                         label = { Text("Mark chores due at — hour") }
                     )
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    Divider(modifier = Modifier.padding(vertical = Space.lg))
                     Text("Theme", style = MaterialTheme.typography.titleMedium)
                     TextButton(onClick = navActions.onNavigateToTheming) { Text("Household Default Theme") }
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    Divider(modifier = Modifier.padding(vertical = Space.lg))
                     Text("Data", style = MaterialTheme.typography.titleMedium)
                     TextButton(onClick = navActions.onNavigateToData) { Text("Data (Export/Import, Points Log)") }
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    Divider(modifier = Modifier.padding(vertical = Space.lg))
                     Text("About", style = MaterialTheme.typography.titleMedium)
                     Text("Current version: ${updateStatus?.currentVersion ?: "unknown"}")
                     Text("Latest version: ${updateStatus?.latestVersion ?: "unknown"}")
@@ -161,7 +161,7 @@ fun SettingsContent(
                     }
                     Text("Last checked: ${updateStatus?.lastCheckedAt?.let(::formatDateTime) ?: "never"}")
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Check for updates automatically")
@@ -177,11 +177,11 @@ fun SettingsContent(
                     }
 
                     Button(
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = Space.lg),
                         onClick = { onSave(draft) },
                         enabled = !isSaving
                     ) {
-                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
                         Text("Save Settings")
                     }
                 }
@@ -217,8 +217,8 @@ fun SettingsMenuContent(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(Space.lg),
+        verticalArrangement = Arrangement.spacedBy(Space.sm)
     ) {
         SettingsMenuItem(label = "Preferences", onClick = onNavigateToPreferences)
         if (isAdmin) {
@@ -242,7 +242,7 @@ private fun SettingsMenuItem(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(Space.lg),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

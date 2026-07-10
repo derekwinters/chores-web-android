@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.derekwinters.chores.data.model.AppConfig
@@ -33,6 +32,7 @@ import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.common.BannerType
 import com.derekwinters.chores.ui.common.SettingsBanner
 import com.derekwinters.chores.ui.common.formatDateTime
+import com.derekwinters.chores.ui.theme.Space
 
 /**
  * Issue #88: About settings section screen (independently-routed, shared SettingsViewModel scoped
@@ -71,7 +71,7 @@ fun SettingsAboutContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
@@ -84,12 +84,12 @@ fun SettingsAboutContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
+                        .padding(Space.lg)
                 ) {
-                    Divider(modifier = Modifier.padding(bottom = 16.dp))
+                    Divider(modifier = Modifier.padding(bottom = Space.lg))
                     Text("About", style = MaterialTheme.typography.titleMedium)
 
-                    Text("Current version: ${updateStatus?.currentVersion ?: "unknown"}", modifier = Modifier.padding(top = 8.dp))
+                    Text("Current version: ${updateStatus?.currentVersion ?: "unknown"}", modifier = Modifier.padding(top = Space.sm))
                     Text("Latest version: ${updateStatus?.latestVersion ?: "unknown"}")
                     if (updateStatus?.updateAvailable == true) {
                         Text("Update available!", color = MaterialTheme.colorScheme.error)
@@ -99,7 +99,7 @@ fun SettingsAboutContent(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
+                            .padding(top = Space.sm),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Check for updates automatically")
@@ -112,15 +112,15 @@ fun SettingsAboutContent(
                     TextButton(onClick = onCheckForUpdates) { Text("Check Now") }
 
                     if (saveState is UiState.Error) {
-                        SettingsBanner(message = saveState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = 8.dp))
+                        SettingsBanner(message = saveState.message, type = BannerType.ERROR, modifier = Modifier.padding(top = Space.sm))
                     }
 
                     Button(
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = Space.lg),
                         onClick = { onSave(draft) },
                         enabled = isDirty && !isSaving
                     ) {
-                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = Space.sm))
                         Text("Save")
                     }
                 }

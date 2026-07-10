@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.ThemeOption
 import com.derekwinters.chores.ui.UiState
@@ -53,7 +52,7 @@ fun ThemePreferenceContent(
         when (uiState) {
             is UiState.Idle, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             is UiState.Error -> Text(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                modifier = Modifier.align(Alignment.Center).padding(Space.xl),
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error
             )
@@ -68,9 +67,9 @@ fun ThemePreferenceContent(
 
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize().padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.fillMaxSize().padding(Space.md),
+                    horizontalArrangement = Arrangement.spacedBy(Space.md),
+                    verticalArrangement = Arrangement.spacedBy(Space.md)
                 ) {
                     item {
                         ThemeOptionCard(
@@ -103,8 +102,8 @@ private fun ThemeOptionCard(name: String, theme: ThemeOption, selected: Boolean,
             .then(
                 if (selected) {
                     Modifier.shadow(
-                        elevation = 16.dp,
-                        shape = RoundedCornerShape(12.dp),
+                        elevation = Elevations.level4,
+                        shape = RoundedCornerShape(Corner.md),
                         clip = false
                     )
                 } else {
@@ -112,26 +111,27 @@ private fun ThemeOptionCard(name: String, theme: ThemeOption, selected: Boolean,
                 }
             ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (selected) 12.dp else 4.dp
+            defaultElevation = if (selected) Elevations.level3 else Elevations.level1
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(Space.md),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
             Text(
                 name,
-                modifier = Modifier.padding(horizontal = 4.dp),
+                modifier = Modifier.padding(horizontal = Space.xs),
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center
             )
             // Display all 4 preview colors (matching web: primary, secondary, accent, background)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                // Off-scale 6dp gap snapped to the nearest spacing token (4dp) per issue #23.
+                horizontalArrangement = Arrangement.spacedBy(Space.xs, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ColorSwatch(color = theme.primary, contentDescription = "Primary color")
@@ -147,8 +147,10 @@ private fun ThemeOptionCard(name: String, theme: ThemeOption, selected: Boolean,
 private fun ColorSwatch(color: String, contentDescription: String) {
     Box(
         modifier = Modifier
-            .size(30.dp)
-            .background(parseHexColor(color), RoundedCornerShape(4.dp))
+            // Off-scale 30dp swatch snapped to the 32dp spacing token per issue #23 (swatch
+            // sizes ride the Space scale, like ThemeAdminScreen's 40dp/Space.xxxl swatches).
+            .size(Space.xxl)
+            .background(parseHexColor(color), RoundedCornerShape(Corner.xs))
     ) {
         // Empty box for color display
     }
