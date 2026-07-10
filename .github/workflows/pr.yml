@@ -73,3 +73,42 @@ jobs:
         with:
           name: app-debug-${{ steps.short-sha.outputs.sha }}
           path: app/build/outputs/apk/debug/*.apk
+
+  composite-gallery:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      # Both platforms commit their snapshots, so the gallery needs only this
+      # working tree + a public shallow clone of the web repo. The pairing
+      # script lives canonically in chores-web-design-tokens (issue #6 there).
+      - name: Fetch web baselines and gallery script
+        run: |
+          git clone --depth 1 https://github.com/derekwinters/chores-web-frontend /tmp/web
+          curl -fsSL -o /tmp/composite-gallery.mjs https://raw.githubusercontent.com/derekwinters/chores-web-design-tokens/main/scripts/composite-gallery.mjs
+
+      - name: Build composite gallery
+        run: node /tmp/composite-gallery.mjs --web /tmp/web/.visual-baselines --android app/src/test/snapshots --out gallery/index.html
+
+      - name: Upload gallery artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: composite-gallery
+          path: gallery/index.html
+
+      - name: Comment gallery link on themed-component changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --name-only "origin/${{ github.base_ref }}"...HEAD | grep -qE '^app/src/(main/java/com/derekwinters/chores/ui/|test/snapshots/)'; then
+            body="📸 Composite visual gallery (web ↔ android side by side) for this PR: download the \`composite-gallery\` artifact from this run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --edit-last --body "$body" \
+              || gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body "$body"
+          else
+            echo "No themed-component changes; skipping comment."
+          fi
