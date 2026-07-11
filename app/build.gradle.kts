@@ -77,6 +77,20 @@ android {
             isReturnDefaultValues = true
         }
     }
+
+    // Issue #18: name APK outputs chores-<versionName>-<buildType>.apk (e.g.
+    // chores-1.0.0-release.apk) so every CI artifact and GitHub Release asset carries the
+    // version without any workflow-side renaming — the workflows all glob *.apk. versionName
+    // comes from gradle.properties (bumped by Release Please), keeping one source of truth.
+    // Uses the classic variant API: the new-style androidComponents API has no supported hook
+    // for output filenames in AGP 8.x, and the cast below is the well-known escape hatch for
+    // setting outputFileName from the Kotlin DSL.
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "chores-${versionName}-${buildType.name}.apk"
+        }
+    }
 }
 
 // Hilt's generated components reference each other before kapt has generated all of them;

@@ -1,9 +1,25 @@
-name: Tagged Release
+# Manual backfill/recovery path: build the release APK for an existing tag and attach it
+# to that tag's GitHub Release. Normal releases are built by the build-and-attach job in
+# .github/workflows/release-please.yml, in the same run that creates the release.
+#
+# This workflow used to trigger on tag pushes ("v*"). That trigger was abandoned (issue #18)
+# for two reasons:
+#   1. Release Please creates tags with the default GITHUB_TOKEN, and GitHub never fires
+#      workflows from GITHUB_TOKEN-initiated events — automated releases silently never
+#      triggered this workflow.
+#   2. Tag-triggered runs execute the workflow file frozen at the tag's commit. The v1.0.0
+#      run failed the org's SHA-pinning policy because the tag predates the pinned action
+#      refs, and re-running could never fix it. Dispatched runs use the current workflow
+#      from main while checking out the requested tag, so they can't hit that trap.
+name: Release APK Backfill (manual)
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to build and attach the APK to (e.g. v1.0.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,8 +28,10 @@ jobs:
   build-and-attach-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout tag
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
@@ -35,4 +53,5 @@ jobs:
       - name: Attach APK to GitHub Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
+          tag_name: ${{ inputs.tag }}
           files: app/build/outputs/apk/release/*.apk
