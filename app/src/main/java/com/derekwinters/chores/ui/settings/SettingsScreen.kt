@@ -28,9 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.derekwinters.chores.data.model.AppConfig
-import com.derekwinters.chores.data.model.UpdateCheckStatus
+import com.derekwinters.chores.data.model.AppVersionUiState
+import com.derekwinters.chores.data.model.BackendVersionUiState
 import com.derekwinters.chores.ui.UiState
-import com.derekwinters.chores.ui.common.formatDateTime
 import com.derekwinters.chores.ui.theme.Space
 
 /** Issue #20/#21/#22/#24: cross-screen nav callbacks the Settings destination needs. */
@@ -68,16 +68,18 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
-    val updateStatus by viewModel.updateStatus.collectAsState()
+    val appVersionState by viewModel.appVersionState.collectAsState()
+    val backendVersionState by viewModel.backendVersionState.collectAsState()
 
     SettingsContent(
         modifier = modifier,
         uiState = uiState,
         saveState = saveState,
-        updateStatus = updateStatus,
+        appVersionState = appVersionState,
+        backendVersionState = backendVersionState,
         navActions = navActions,
         onSave = viewModel::save,
-        onCheckForUpdates = viewModel::checkForUpdates
+        onCheckForUpdates = viewModel::checkAppVersionNow
     )
 }
 
@@ -85,7 +87,8 @@ fun SettingsScreen(
 fun SettingsContent(
     uiState: UiState<AppConfig>,
     saveState: UiState<Unit>,
-    updateStatus: UpdateCheckStatus?,
+    appVersionState: AppVersionUiState,
+    backendVersionState: BackendVersionUiState,
     navActions: SettingsNavActions,
     onSave: (AppConfig) -> Unit,
     onCheckForUpdates: () -> Unit,
@@ -154,12 +157,34 @@ fun SettingsContent(
 
                     Divider(modifier = Modifier.padding(vertical = Space.lg))
                     Text("About", style = MaterialTheme.typography.titleMedium)
-                    Text("Current version: ${updateStatus?.currentVersion ?: "unknown"}")
-                    Text("Latest version: ${updateStatus?.latestVersion ?: "unknown"}")
-                    if (updateStatus?.updateAvailable == true) {
-                        Text("Update available!", color = MaterialTheme.colorScheme.error)
+                    when (appVersionState) {
+                        is AppVersionUiState.Loading -> Text("Current version: checking…")
+                        is AppVersionUiState.Checked -> {
+                            Text("Current version: ${appVersionState.currentVersion}")
+                            Text("Latest version: ${appVersionState.latestVersion}")
+                            if (appVersionState.updateAvailable) {
+                                Text("Update available!", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                        is AppVersionUiState.Unavailable -> {
+                            Text("Current version: ${appVersionState.currentVersion}")
+                            Text("Latest version: unknown")
+                        }
                     }
-                    Text("Last checked: ${updateStatus?.lastCheckedAt?.let(::formatDateTime) ?: "never"}")
+                    when (backendVersionState) {
+                        is BackendVersionUiState.Loading -> Text("Backend version: checking…")
+                        is BackendVersionUiState.Available -> {
+                            Text("Backend version: ${backendVersionState.version}")
+                            Text(
+                                "Backend update status: " +
+                                    if (backendVersionState.updateAvailable) "update available" else "up to date"
+                            )
+                        }
+                        is BackendVersionUiState.Unsupported -> {
+                            Text("Backend version: unknown")
+                            Text("Backend update status: unsupported check")
+                        }
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = Space.sm),
                         horizontalArrangement = Arrangement.SpaceBetween

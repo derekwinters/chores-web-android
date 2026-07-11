@@ -20,12 +20,17 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import com.derekwinters.chores.data.model.AppVersionUiState
+import com.derekwinters.chores.data.model.BackendVersionUiState
 import com.derekwinters.chores.data.model.Chore
 import com.derekwinters.chores.data.model.CurrentTheme
 import com.derekwinters.chores.data.model.ThemeDefaultInfo
 import com.derekwinters.chores.data.model.ThemeOption
+import com.derekwinters.chores.data.model.toDomain
+import com.derekwinters.chores.data.network.dto.ConfigDto
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.chores.ChoreListContent
+import com.derekwinters.chores.ui.settings.SettingsAboutContent
 import com.derekwinters.chores.ui.theme.ChoresTheme
 import com.derekwinters.chores.ui.theme.PillBadgeTokens
 import com.derekwinters.chores.ui.theme.Space
@@ -360,5 +365,48 @@ class ComponentSnapshotTest {
     @Test
     fun alertDialog_deleteConfirm_paper() {
         captureAlertDialog(paperTheme, "alertdialog_deleteconfirm_paper.png")
+    }
+
+    // --- Settings About screen (issue #35: own-app version + backend version + repo links) -----
+
+    private fun captureSettingsAbout(theme: ThemeOption, fileName: String) {
+        composeTestRule.setContent {
+            ChoresTheme(themeOption = theme) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    SettingsAboutContent(
+                        uiState = UiState.Success(ConfigDto().toDomain()),
+                        saveState = UiState.Idle,
+                        appVersionState = AppVersionUiState.Checked(
+                            currentVersion = "1.1.0",
+                            latestVersion = "1.2.0",
+                            updateAvailable = true,
+                            lastCheckedAtMillis = 0L
+                        ),
+                        backendVersionState = BackendVersionUiState.Available(
+                            version = "2.2.0",
+                            latestVersion = "2.3.0",
+                            updateAvailable = true,
+                            checkedAt = "2026-07-02T22:40:54.326377Z"
+                        ),
+                        onSave = {},
+                        onCheckAppVersionNow = {}
+                    )
+                }
+            }
+        }
+        composeTestRule.onRoot().captureRoboImage(goldenPath(fileName))
+    }
+
+    @Test
+    fun settingsAbout_sections_dark() {
+        captureSettingsAbout(darkTheme, "settingsabout_sections_dark.png")
+    }
+
+    @Test
+    fun settingsAbout_sections_paper() {
+        captureSettingsAbout(paperTheme, "settingsabout_sections_paper.png")
     }
 }
