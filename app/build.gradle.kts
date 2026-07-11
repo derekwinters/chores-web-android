@@ -2,9 +2,14 @@ import java.time.Duration
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    // AGP 9.0+ has Kotlin support built in; the standalone Kotlin Android plugin is no longer
+    // required and errors on apply. See https://kotl.in/gradle/agp-built-in-kotlin.
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.kapt")
+    // Kotlin 2.0+ decoupled the Jetpack Compose compiler from the core Kotlin plugin; it now
+    // needs its own Gradle plugin (replaces composeOptions.kotlinCompilerExtensionVersion below,
+    // which was the pre-2.0 pinning mechanism).
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     // Issue #15: Roborazzi snapshot testing (recordRoborazziDebug / verifyRoborazziDebug tasks).
     // Version is pinned in the root build.gradle.kts plugins block. Goldens live in
@@ -59,10 +64,6 @@ android {
 
     buildFeatures {
         compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     packaging {

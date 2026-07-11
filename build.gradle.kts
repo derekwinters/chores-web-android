@@ -1,9 +1,15 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     id("com.android.application") version "9.2.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.4.0" apply false
+    // AGP 9.0+ bundles Kotlin support; the standalone org.jetbrains.kotlin.android plugin is no
+    // longer applied anywhere in this project (see app/build.gradle.kts) and is intentionally
+    // not declared here. https://kotl.in/gradle/agp-built-in-kotlin.
     id("org.jetbrains.kotlin.plugin.serialization") version "2.4.0" apply false
     id("org.jetbrains.kotlin.kapt") version "2.4.0" apply false
+    // Kotlin 2.0+ decoupled the Compose compiler from the core Kotlin plugin; version must match
+    // the Kotlin version above (2.4.0). Replaces the pre-2.0 composeOptions.
+    // kotlinCompilerExtensionVersion pin that used to live in app/build.gradle.kts.
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.0" apply false
     id("com.google.dagger.hilt.android") version "2.60" apply false
     // Issue #15 (design-token rollout iteration 5, derekwinters/chores-web-docs#11): snapshot
     // testing. Roborazzi, not Paparazzi — Paparazzi does not support com.android.application
