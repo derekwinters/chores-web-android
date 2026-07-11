@@ -1,6 +1,7 @@
 package com.derekwinters.chores.data.network
 
 import com.derekwinters.chores.data.network.dto.AuthLogEntryDto
+import com.derekwinters.chores.data.network.dto.BackendVersionDto
 import com.derekwinters.chores.data.network.dto.ChoreCreateRequestDto
 import com.derekwinters.chores.data.network.dto.ChoreDto
 import com.derekwinters.chores.data.network.dto.ChoreUpdateRequestDto
@@ -30,7 +31,6 @@ import com.derekwinters.chores.data.network.dto.ThemeDto
 import com.derekwinters.chores.data.network.dto.ThemeRenameRequestDto
 import com.derekwinters.chores.data.network.dto.ThemeSaveRequestDto
 import com.derekwinters.chores.data.network.dto.ThemeUpdateRequestDto
-import com.derekwinters.chores.data.network.dto.UpdateCheckStatusDto
 import com.derekwinters.chores.data.network.dto.UpdatePersonRequestDto
 import com.derekwinters.chores.data.network.dto.UpdatePointsLogRequestDto
 import com.derekwinters.chores.data.network.dto.UserInfoDto
@@ -65,7 +65,8 @@ class FakeChoresApi(
     private val pointsSummaryResult: List<PointsSummaryDto> = emptyList(),
     private val peopleResult: List<PersonDto> = emptyList(),
     private val configResult: ConfigDto = ConfigDto(),
-    private val updateCheckStatusResult: UpdateCheckStatusDto = UpdateCheckStatusDto(current_version = "1.0.0"),
+    private val backendVersionResult: BackendVersionDto? = null,
+    private val backendVersionError: Throwable? = null,
     private val skipResult: ChoreDto? = null,
     private val markDueResult: ChoreDto? = null,
     private val createChoreResult: ChoreDto? = null,
@@ -240,9 +241,10 @@ class FakeChoresApi(
 
     override suspend fun updateConfig(request: ConfigDto): ConfigDto = request
 
-    override suspend fun getUpdateCheckStatus(): UpdateCheckStatusDto = updateCheckStatusResult
-
-    override suspend fun checkForUpdates(): UpdateCheckStatusDto = updateCheckStatusResult
+    override suspend fun getBackendVersion(): BackendVersionDto {
+        backendVersionError?.let { throw it }
+        return backendVersionResult ?: error("FakeChoresApi.backendVersionResult not configured")
+    }
 
     override suspend fun exportConfig(): ResponseBody = error("not configured")
 

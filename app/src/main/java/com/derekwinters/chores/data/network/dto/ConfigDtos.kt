@@ -22,18 +22,3 @@ data class ConfigDto(
     val update_check_enabled: Boolean = true,
     val update_check_interval: Int = 24
 )
-
-/**
- * Response body for `GET /v1/config/updates/status` and `POST /v1/config/updates/check` — matches
- * the backend's `UpdateCheckStatus` schema. Version/update-availability info lives here, not on
- * [ConfigDto]; the earlier (wrong) implementation had conflated the two into a single config DTO.
- */
-@Serializable
-data class UpdateCheckStatusDto(
-    val current_version: String,
-    val latest_version: String? = null,
-    val last_checked_at: String? = null,
-    val check_enabled: Boolean = true,
-    val check_interval_hours: Int = 24,
-    val update_available: Boolean = false
-)

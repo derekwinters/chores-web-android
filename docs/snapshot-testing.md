@@ -28,6 +28,7 @@ palettes. Goldens are PNGs in `app/src/test/snapshots/`, named
 | `OutlinedTextField` (filled + empty-with-label) | `textfield_outlined_*` |
 | Theme preference tiles (`ThemePreferenceContent`, selected + unselected) | `themepreference_tiles_*` |
 | `AlertDialog` (chore delete confirmation shape) | `alertdialog_deleteconfirm_*` |
+| Settings About screen (`SettingsAboutContent`; own-app version, backend version, repo links — issue #35) | `settingsabout_sections_*` |
 
 `PillBadge`, `ChoreRow`, and `ThemeOptionCard` are private composables; the tests snapshot the
 closest public wrapper (`ChoreListContent`, `ThemePreferenceContent`) or an equivalent inline

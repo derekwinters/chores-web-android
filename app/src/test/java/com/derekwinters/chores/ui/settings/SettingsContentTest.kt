@@ -8,11 +8,11 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.derekwinters.chores.data.model.AppConfig
-import com.derekwinters.chores.data.model.UpdateCheckStatus
+import com.derekwinters.chores.data.model.AppVersionUiState
+import com.derekwinters.chores.data.model.BackendVersionUiState
 import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.network.dto.ConfigDto
 import com.derekwinters.chores.ui.UiState
-import com.derekwinters.chores.ui.common.formatDateTime
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +21,9 @@ import org.robolectric.annotation.Config
 /**
  * Issue #20 behaviors: General/Auth/Chores/About sections and their nav entries (area: ui,
  * android). Exercises [SettingsContent] directly (no Hilt component needed).
+ *
+ * Issue #35: [SettingsContent]'s About section now takes [AppVersionUiState]/
+ * [BackendVersionUiState] instead of the removed backend-sourced `UpdateCheckStatus`.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33])
@@ -36,7 +39,8 @@ class SettingsContentTest {
             SettingsContent(
                 uiState = UiState.Success(ConfigDto(title = "Chores").toDomain()),
                 saveState = UiState.Idle,
-                updateStatus = null,
+                appVersionState = AppVersionUiState.Loading,
+                backendVersionState = BackendVersionUiState.Loading,
                 navActions = SettingsNavActions(),
                 onSave = { saved = it },
                 onCheckForUpdates = {}
@@ -57,7 +61,8 @@ class SettingsContentTest {
             SettingsContent(
                 uiState = UiState.Success(ConfigDto().toDomain()),
                 saveState = UiState.Idle,
-                updateStatus = null,
+                appVersionState = AppVersionUiState.Loading,
+                backendVersionState = BackendVersionUiState.Loading,
                 navActions = SettingsNavActions(onNavigateToAuthLog = { navigated = true }),
                 onSave = {},
                 onCheckForUpdates = {}
@@ -76,7 +81,8 @@ class SettingsContentTest {
             SettingsContent(
                 uiState = UiState.Success(ConfigDto().toDomain()),
                 saveState = UiState.Idle,
-                updateStatus = null,
+                appVersionState = AppVersionUiState.Loading,
+                backendVersionState = BackendVersionUiState.Loading,
                 navActions = SettingsNavActions(),
                 onSave = {},
                 onCheckForUpdates = { checked = true }
@@ -89,52 +95,43 @@ class SettingsContentTest {
     }
 
     @Test
-    fun settingsContent_lastChecked_formatsIsoTimestamp() {
-        val status = UpdateCheckStatus(
+    fun settingsContent_appVersion_displaysCheckedState() {
+        val status = AppVersionUiState.Checked(
             currentVersion = "1.0.0",
             latestVersion = "1.0.0",
-            lastCheckedAt = "2026-07-02T22:40:54.326377Z",
-            checkEnabled = true,
-            checkIntervalHours = 24,
-            updateAvailable = false
+            updateAvailable = false,
+            lastCheckedAtMillis = 0L
         )
         composeTestRule.setContent {
             SettingsContent(
                 uiState = UiState.Success(ConfigDto().toDomain()),
                 saveState = UiState.Idle,
-                updateStatus = status,
+                appVersionState = status,
+                backendVersionState = BackendVersionUiState.Loading,
                 navActions = SettingsNavActions(),
                 onSave = {},
                 onCheckForUpdates = {}
             )
         }
 
-        composeTestRule.onNodeWithText("Last checked: ${formatDateTime("2026-07-02T22:40:54.326377Z")}")
-            .performScrollTo()
-            .assertExists()
+        composeTestRule.onNodeWithText("Current version: 1.0.0").performScrollTo().assertExists()
     }
 
     @Test
-    fun settingsContent_lastChecked_malformedTimestamp_fallsBackToRawString() {
-        val status = UpdateCheckStatus(
-            currentVersion = "1.0.0",
-            latestVersion = "1.0.0",
-            lastCheckedAt = "not-a-timestamp",
-            checkEnabled = true,
-            checkIntervalHours = 24,
-            updateAvailable = false
-        )
+    fun settingsContent_backendVersionUnsupported_rendersUnknownFallback() {
         composeTestRule.setContent {
             SettingsContent(
                 uiState = UiState.Success(ConfigDto().toDomain()),
                 saveState = UiState.Idle,
-                updateStatus = status,
+                appVersionState = AppVersionUiState.Loading,
+                backendVersionState = BackendVersionUiState.Unsupported,
                 navActions = SettingsNavActions(),
                 onSave = {},
                 onCheckForUpdates = {}
             )
         }
 
-        composeTestRule.onNodeWithText("Last checked: not-a-timestamp").performScrollTo().assertExists()
+        composeTestRule.onNodeWithText("Backend version: unknown").performScrollTo().assertExists()
+        composeTestRule.onNodeWithText("Backend update status: unsupported check").performScrollTo().assertExists()
     }
 }

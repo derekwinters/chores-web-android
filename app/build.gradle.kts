@@ -59,6 +59,11 @@ android {
 
     buildFeatures {
         compose = true
+        // Issue #35: BuildConfig.VERSION_NAME (release-please managed, see the versionName
+        // wiring above) is the real "current app version" for the About screen's client-side
+        // GitHub-releases check — not previously used anywhere, so buildConfig generation wasn't
+        // turned on until now.
+        buildConfig = true
     }
 
     composeOptions {
