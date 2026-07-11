@@ -2,8 +2,11 @@ import java.time.Duration
 
 plugins {
     id("com.android.application")
-    // AGP 9.0+ has Kotlin support built in; the standalone Kotlin Android plugin is no longer
-    // required and errors on apply. See https://kotl.in/gradle/agp-built-in-kotlin.
+    // AGP 9.0+'s built-in Kotlin support is incompatible with org.jetbrains.kotlin.kapt (see
+    // gradle.properties: android.builtInKotlin=false / android.newDsl=false), and this project
+    // still uses kapt for Hilt's annotation processing, so we stay on the traditional
+    // (non-built-in) Kotlin model and keep applying the standalone Kotlin Android plugin.
+    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.kapt")
     // Kotlin 2.0+ decoupled the Jetpack Compose compiler from the core Kotlin plugin; it now
