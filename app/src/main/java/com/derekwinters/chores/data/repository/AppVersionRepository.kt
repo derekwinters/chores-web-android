@@ -31,8 +31,11 @@ class AppVersionRepository @Inject constructor(
         val lastCheckedAt = cache.getLastCheckedAtMillis()
         val cachedLatest = cache.getCachedLatestVersion()
 
-        val cacheIsFresh = lastCheckedAt != null && (now - lastCheckedAt) < CACHE_TTL_MILLIS
-        if (!forceRefresh && cacheIsFresh && cachedLatest != null) {
+        // Null-checking lastCheckedAt directly in this condition (rather than via a separate
+        // Boolean) keeps it smart-cast to non-null Long throughout the block below.
+        if (!forceRefresh && lastCheckedAt != null && cachedLatest != null &&
+            (now - lastCheckedAt) < CACHE_TTL_MILLIS
+        ) {
             return AppVersionUiState.Checked(
                 currentVersion = currentVersion,
                 latestVersion = cachedLatest,
