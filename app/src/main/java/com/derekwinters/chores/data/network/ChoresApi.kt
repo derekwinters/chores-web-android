@@ -1,6 +1,7 @@
 package com.derekwinters.chores.data.network
 
 import com.derekwinters.chores.data.network.dto.AuthLogEntryDto
+import com.derekwinters.chores.data.network.dto.BackendVersionDto
 import com.derekwinters.chores.data.network.dto.ChoreCreateRequestDto
 import com.derekwinters.chores.data.network.dto.ChoreDto
 import com.derekwinters.chores.data.network.dto.ChoreUpdateRequestDto
@@ -30,7 +31,6 @@ import com.derekwinters.chores.data.network.dto.ThemeDto
 import com.derekwinters.chores.data.network.dto.ThemeRenameRequestDto
 import com.derekwinters.chores.data.network.dto.ThemeSaveRequestDto
 import com.derekwinters.chores.data.network.dto.ThemeUpdateRequestDto
-import com.derekwinters.chores.data.network.dto.UpdateCheckStatusDto
 import com.derekwinters.chores.data.network.dto.UpdatePersonRequestDto
 import com.derekwinters.chores.data.network.dto.UpdatePointsLogRequestDto
 import com.derekwinters.chores.data.network.dto.UserInfoDto
@@ -214,13 +214,16 @@ interface ChoresApi {
     @PUT("v1/config")
     suspend fun updateConfig(@Body request: ConfigDto): ConfigDto
 
-    /** Issue #20: "About" tab's version info, fetched on Settings load (admin only). */
-    @GET("v1/config/updates/status")
-    suspend fun getUpdateCheckStatus(): UpdateCheckStatusDto
-
-    /** Issue #20: "Check Now" manual update check (admin only). */
-    @POST("v1/config/updates/check")
-    suspend fun checkForUpdates(): UpdateCheckStatusDto
+    /**
+     * Issue #35 (chores-web-backend#27): the backend's own public version/update-status — no
+     * auth required. Distinct from this app's own client-side GitHub-releases check
+     * ([com.derekwinters.chores.data.network.GitHubApi]), which the backend has no way to compute
+     * since it doesn't know what Android app version is actually deployed. Replaces the removed
+     * `/v1/config/updates/status` + `/v1/config/updates/check` endpoints, which (incorrectly)
+     * doubled as this app's own version data.
+     */
+    @GET("version")
+    suspend fun getBackendVersion(): BackendVersionDto
 
     // --- Data export/import (issue #22) ---
 

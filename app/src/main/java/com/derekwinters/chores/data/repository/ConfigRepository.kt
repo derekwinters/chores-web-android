@@ -1,7 +1,7 @@
 package com.derekwinters.chores.data.repository
 
 import com.derekwinters.chores.data.model.AppConfig
-import com.derekwinters.chores.data.model.UpdateCheckStatus
+import com.derekwinters.chores.data.model.BackendVersionUiState
 import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.model.toDto
 import com.derekwinters.chores.data.network.ChoresApi
@@ -23,11 +23,13 @@ class ConfigRepository @Inject constructor(
     suspend fun updateConfig(config: AppConfig): Result<AppConfig> =
         safeApiCall { api.updateConfig(config.toDto()) }.map { it.toDomain() }
 
-    /** Issue #20: "About" tab's version info, fetched on Settings load. */
-    suspend fun getUpdateCheckStatus(): Result<UpdateCheckStatus> =
-        safeApiCall { api.getUpdateCheckStatus() }.map { it.toDomain() }
-
-    /** Issue #20: "Check Now" manual update check. */
-    suspend fun checkForUpdates(): Result<UpdateCheckStatus> =
-        safeApiCall { api.checkForUpdates() }.map { it.toDomain() }
+    /**
+     * Issue #35: "Backend version" About-screen section, sourced from the backend's public
+     * `GET /version` (chores-web-backend#27). Callers should fall back to
+     * [BackendVersionUiState.Unsupported] on failure (see [SettingsViewModel]) rather than
+     * surfacing an error — a backend predating this endpoint (404) is an expected, not
+     * exceptional, case.
+     */
+    suspend fun getBackendVersion(): Result<BackendVersionUiState.Available> =
+        safeApiCall { api.getBackendVersion() }.map { it.toDomain() }
 }

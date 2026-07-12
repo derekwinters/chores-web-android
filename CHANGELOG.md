@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0](https://github.com/derekwinters/chores-web-android/compare/v1.0.0...v1.1.0) (2026-07-11)
+
+
+### Features
+
+* adopt component-tier design tokens ([#29](https://github.com/derekwinters/chores-web-android/issues/29)) ([a986443](https://github.com/derekwinters/chores-web-android/commit/a986443acb8e3d44f72220449511170d5e81f0b7))
+* consume the design-tokens Maven artifact for the default theme ([#25](https://github.com/derekwinters/chores-web-android/issues/25)) ([9796113](https://github.com/derekwinters/chores-web-android/commit/97961132c862ec5a1af701f9c30021fbe9ac8415))
+* Roborazzi snapshot testing + component snapshot catalog ([#30](https://github.com/derekwinters/chores-web-android/issues/30)) ([1ff5618](https://github.com/derekwinters/chores-web-android/commit/1ff561816ea1f5e6896fd91074967cede93eddcc))
+
 ## [1.0.0](https://github.com/derekwinters/chores-web-android-client/compare/v0.1.0...v1.0.0) (2026-07-08)
 
 
