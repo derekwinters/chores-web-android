@@ -26,7 +26,11 @@ plugins {
 
 android {
     namespace = "com.derekwinters.chores"
-    compileSdk = 34
+    // Several of this bump's transitive AndroidX dependencies (androidx.core:core-ktx:1.19.0,
+    // androidx.lifecycle:lifecycle-{runtime,viewmodel}-compose:2.11.0) require compiling against
+    // API 37; compileSdk only affects which APIs are visible at compile time, not the app's
+    // actual minSdk/targetSdk runtime behavior, so this is safe to raise on its own.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.derekwinters.chores"
