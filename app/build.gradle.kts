@@ -9,8 +9,10 @@ plugins {
     // official migration guide, kapt keeps working by additionally applying
     // com.android.legacy-kapt (pinned to the AGP version, see root build.gradle.kts) alongside
     // it — this is the supported bridge for projects that aren't ready to move to KSP yet.
-    id("org.jetbrains.kotlin.kapt")
+    // Application order matters: legacy-kapt must apply before kotlin.kapt so the built-in-Kotlin
+    // compatibility check kotlin.kapt runs at apply time already sees the bridge in place.
     id("com.android.legacy-kapt")
+    id("org.jetbrains.kotlin.kapt")
     // Kotlin 2.0+ decoupled the Jetpack Compose compiler from the core Kotlin plugin; it now
     // needs its own Gradle plugin (replaces composeOptions.kotlinCompilerExtensionVersion below,
     // which was the pre-2.0 pinning mechanism).
