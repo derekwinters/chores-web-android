@@ -5,14 +5,13 @@ plugins {
     // AGP 9.0+ has Kotlin support built in; the standalone Kotlin Android plugin is no longer
     // applied (and errors if it is). See https://developer.android.com/build/migrate-to-built-in-kotlin.
     id("org.jetbrains.kotlin.plugin.serialization")
-    // org.jetbrains.kotlin.kapt alone is incompatible with built-in Kotlin support. Per the
-    // official migration guide, kapt keeps working by additionally applying
-    // com.android.legacy-kapt (pinned to the AGP version, see root build.gradle.kts) alongside
-    // it — this is the supported bridge for projects that aren't ready to move to KSP yet.
-    // Application order matters: legacy-kapt must apply before kotlin.kapt so the built-in-Kotlin
-    // compatibility check kotlin.kapt runs at apply time already sees the bridge in place.
+    // org.jetbrains.kotlin.kapt is incompatible with built-in Kotlin support and, per the
+    // official migration guide, is fully replaced (not supplemented) by com.android.legacy-kapt,
+    // pinned to the AGP version (see root build.gradle.kts), for projects like this one that
+    // aren't migrating off kapt to KSP yet. Applying both at once fails with "Cannot add
+    // extension with name 'kapt', as there is an extension already registered with that name" —
+    // both plugins register the same `kapt {}` / `kapt(...)` dependency-configuration surface.
     id("com.android.legacy-kapt")
-    id("org.jetbrains.kotlin.kapt")
     // Kotlin 2.0+ decoupled the Jetpack Compose compiler from the core Kotlin plugin; it now
     // needs its own Gradle plugin (replaces composeOptions.kotlinCompilerExtensionVersion below,
     // which was the pre-2.0 pinning mechanism).
