@@ -2,13 +2,15 @@ import java.time.Duration
 
 plugins {
     id("com.android.application")
-    // AGP 9.0+'s built-in Kotlin support is incompatible with org.jetbrains.kotlin.kapt (see
-    // gradle.properties: android.builtInKotlin=false / android.newDsl=false), and this project
-    // still uses kapt for Hilt's annotation processing, so we stay on the traditional
-    // (non-built-in) Kotlin model and keep applying the standalone Kotlin Android plugin.
-    id("org.jetbrains.kotlin.android")
+    // AGP 9.0+ has Kotlin support built in; the standalone Kotlin Android plugin is no longer
+    // applied (and errors if it is). See https://developer.android.com/build/migrate-to-built-in-kotlin.
     id("org.jetbrains.kotlin.plugin.serialization")
+    // org.jetbrains.kotlin.kapt alone is incompatible with built-in Kotlin support. Per the
+    // official migration guide, kapt keeps working by additionally applying
+    // com.android.legacy-kapt (pinned to the AGP version, see root build.gradle.kts) alongside
+    // it — this is the supported bridge for projects that aren't ready to move to KSP yet.
     id("org.jetbrains.kotlin.kapt")
+    id("com.android.legacy-kapt")
     // Kotlin 2.0+ decoupled the Jetpack Compose compiler from the core Kotlin plugin; it now
     // needs its own Gradle plugin (replaces composeOptions.kotlinCompilerExtensionVersion below,
     // which was the pre-2.0 pinning mechanism).
@@ -61,9 +63,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    // No kotlinOptions { jvmTarget = ... } block: that DSL is deprecated under AGP 9's built-in
+    // Kotlin support (migrate to kotlin.compilerOptions{} instead), and it isn't needed here
+    // anyway — with built-in Kotlin, jvmTarget defaults to compileOptions.targetCompatibility
+    // (VERSION_17, set above).
 
     buildFeatures {
         compose = true
