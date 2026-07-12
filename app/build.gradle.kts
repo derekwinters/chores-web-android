@@ -90,20 +90,6 @@ android {
             isReturnDefaultValues = true
         }
     }
-
-    // Issue #18: name APK outputs chores-<versionName>-<buildType>.apk (e.g.
-    // chores-1.0.0-release.apk) so every CI artifact and GitHub Release asset carries the
-    // version without any workflow-side renaming — the workflows all glob *.apk. versionName
-    // comes from gradle.properties (bumped by Release Please), keeping one source of truth.
-    // Uses the classic variant API: the new-style androidComponents API has no supported hook
-    // for output filenames in AGP 8.x, and the cast below is the well-known escape hatch for
-    // setting outputFileName from the Kotlin DSL.
-    applicationVariants.all {
-        outputs.all {
-            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
-                "chores-${versionName}-${buildType.name}.apk"
-        }
-    }
 }
 
 // Hilt's generated components reference each other before kapt has generated all of them;
@@ -112,14 +98,29 @@ kapt {
     correctErrorTypes = true
 }
 
-// Compose UI tests rely on androidx.compose.ui:ui-test-manifest, which supplies a test host
-// activity via manifest merging and is only wired up for the debug variant (see
-// debugImplementation dependency below). There is no release-specific behavior in this
-// bootstrap app, so we disable the release unit test variant rather than duplicating the
-// test-manifest dependency into release.
 androidComponents {
+    // Compose UI tests rely on androidx.compose.ui:ui-test-manifest, which supplies a test host
+    // activity via manifest merging and is only wired up for the debug variant (see
+    // debugImplementation dependency below). There is no release-specific behavior in this
+    // bootstrap app, so we disable the release unit test variant rather than duplicating the
+    // test-manifest dependency into release.
     beforeVariants(selector().withBuildType("release")) { variantBuilder ->
         variantBuilder.enableUnitTest = false
+    }
+
+    // Issue #18: name APK outputs chores-<versionName>-<buildType>.apk (e.g.
+    // chores-1.0.0-release.apk) so every CI artifact and GitHub Release asset carries the
+    // version without any workflow-side renaming — the workflows all glob *.apk. versionName
+    // comes from gradle.properties (bumped by Release Please), keeping one source of truth.
+    // Originally used the classic applicationVariants API (the only supported output-filename
+    // hook in AGP 8.x); migrated to the new Variant API's onVariants/outputFileName here because
+    // AGP 9's built-in Kotlin / new-DSL default removes applicationVariants entirely. This
+    // project has no product flavors, so variant.name is just the build type ("debug"/"release").
+    onVariants { variant ->
+        val appVersionName = (project.findProperty("VERSION_NAME") as String).substringBefore("#").trim()
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("chores-$appVersionName-${variant.name}.apk")
+        }
     }
 }
 
