@@ -105,7 +105,14 @@ androidComponents {
     // bootstrap app, so we disable the release unit test variant rather than duplicating the
     // test-manifest dependency into release.
     beforeVariants(selector().withBuildType("release")) { variantBuilder ->
-        variantBuilder.enableUnitTest = false
+        // Plain `variantBuilder.enableUnitTest = false` (which is exactly what this project used
+        // successfully pre-AGP-9) fails to compile here with "Unresolved reference
+        // 'enableUnitTest'" — applying com.android.legacy-kapt (needed for kapt, see the plugins
+        // block above) appears to widen the Kotlin-DSL-visible static type of `variantBuilder`
+        // away from the ApplicationVariantBuilder/HasUnitTestBuilder subtype that declares this
+        // property. A safe cast sidesteps the static-typing gap; the property still exists at
+        // runtime on the concrete variant builder AGP hands us.
+        (variantBuilder as? com.android.build.api.variant.HasUnitTestBuilder)?.enableUnitTest = false
     }
 
     // Issue #18: name APK outputs chores-<versionName>-<buildType>.apk (e.g.
