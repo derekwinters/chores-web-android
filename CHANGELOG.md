@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/derekwinters/chores-web-android/compare/v1.1.0...v1.1.1) (2026-07-12)
+
+
+### Bug Fixes
+
+* **settings:** client-side app-version checker, backend version section, repo links ([#36](https://github.com/derekwinters/chores-web-android/issues/36)) ([db01ee4](https://github.com/derekwinters/chores-web-android/commit/db01ee4872d7f6e5e1c623888d5d882714074bdd))
+
 ## [1.1.0](https://github.com/derekwinters/chores-web-android/compare/v1.0.0...v1.1.0) (2026-07-11)
 
 
