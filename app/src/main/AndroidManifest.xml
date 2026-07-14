@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Issue #43: system notifications for polled backend notifications. minSdk 33 → always a
+         runtime permission, requested post-login from the app shell; denial is non-fatal. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ChoresApplication"

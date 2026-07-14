@@ -1,0 +1,41 @@
+package com.derekwinters.chores.data.repository
+
+import com.derekwinters.chores.data.model.Notification
+import com.derekwinters.chores.data.model.toDomain
+import com.derekwinters.chores.data.network.ChoresApi
+import com.derekwinters.chores.data.network.safeApiCall
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Issue #43: wraps the two notification endpoints (`GET /v1/notifications`,
+ * `POST /v1/notifications/{id}/ack`) via [safeApiCall], following the same pattern as
+ * [ChoreRepository] / [LogRepository]. Consumed by
+ * [com.derekwinters.chores.notifications.NotificationPollWorker] (list) and the notification-tap
+ * handler in `MainActivity` (ack).
+ */
+@Singleton
+class NotificationRepository @Inject constructor(
+    private val api: ChoresApi
+) {
+    /**
+     * Fetches the caller's notifications and maps them to the domain [Notification] model. The
+     * poll worker calls this with the defaults ([includeDismissed] = false) so dismissed rows are
+     * excluded server-side; it still defensively skips any acked/dismissed item before posting.
+     *
+     * @param since only notifications created strictly after this ISO-8601 instant (null = all).
+     */
+    suspend fun getNotifications(
+        since: String? = null,
+        includeDismissed: Boolean = false
+    ): Result<List<Notification>> =
+        safeApiCall { api.getNotifications(since, includeDismissed) }
+            .map { dtos -> dtos.map { it.toDomain() } }
+
+    /**
+     * Acknowledges one notification (notification-tap user action). Idempotent server-side, so a
+     * double-tap or a replayed intent is harmless.
+     */
+    suspend fun acknowledge(notificationId: Int): Result<Unit> =
+        safeApiCall { api.ackNotification(notificationId) }
+}

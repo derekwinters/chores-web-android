@@ -14,6 +14,7 @@ import com.derekwinters.chores.data.network.dto.ImportResultDto
 import com.derekwinters.chores.data.network.dto.LoginRequestDto
 import com.derekwinters.chores.data.network.dto.LoginResponseDto
 import com.derekwinters.chores.data.network.dto.LogEntryDto
+import com.derekwinters.chores.data.network.dto.NotificationDto
 import com.derekwinters.chores.data.network.dto.PersonDto
 import com.derekwinters.chores.data.network.dto.UserStatsDto
 import com.derekwinters.chores.data.network.dto.PointsLogEntryDto
@@ -205,6 +206,32 @@ interface ChoresApi {
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
     ): List<AuthLogEntryDto>
+
+    // --- Notifications (issue #43, chores-web-backend#39) ---
+
+    /**
+     * Issue #43: the caller's notifications, newest first. The server owns delivery state — the
+     * first time a notification is returned here it sets `delivered_at` server-side, which is why
+     * the once-per-item posting guarantee relies on a local posted-ids record rather than this
+     * flag (see [com.derekwinters.chores.notifications.NotificationPollWorker]).
+     *
+     * @param since only notifications created strictly after this ISO-8601 instant (null = all).
+     * @param includeDismissed when false (the poll worker's default) dismissed rows are excluded;
+     *   pre-dismissed rows are never returned in either mode.
+     */
+    @GET("v1/notifications")
+    suspend fun getNotifications(
+        @Query("since") since: String? = null,
+        @Query("include_dismissed") includeDismissed: Boolean = false
+    ): List<NotificationDto>
+
+    /**
+     * Issue #43: acknowledge one notification (fired on notification tap, never merely on
+     * posting). Idempotent server-side. Returns the updated `NotificationOut`, which this app
+     * ignores — the tap handler is fire-and-forget.
+     */
+    @POST("v1/notifications/{id}/ack")
+    suspend fun ackNotification(@Path("id") notificationId: Int)
 
     // --- Config / Settings (issues #12, #20, #22) ---
 

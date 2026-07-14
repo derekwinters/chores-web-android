@@ -14,6 +14,7 @@ import com.derekwinters.chores.data.network.dto.ImportResultDto
 import com.derekwinters.chores.data.network.dto.LoginRequestDto
 import com.derekwinters.chores.data.network.dto.LoginResponseDto
 import com.derekwinters.chores.data.network.dto.LogEntryDto
+import com.derekwinters.chores.data.network.dto.NotificationDto
 import com.derekwinters.chores.data.network.dto.PersonDto
 import com.derekwinters.chores.data.network.dto.UserStatsDto
 import com.derekwinters.chores.data.network.dto.PointsLogEntryDto
@@ -75,6 +76,8 @@ class FakeChoresApi(
     private val redemptionsResult: List<RedemptionDto> = emptyList(),
     private val redeemResult: PersonDto? = null,
     private val logResult: List<LogEntryDto> = emptyList(),
+    private val notificationsResult: List<NotificationDto> = emptyList(),
+    private val notificationsError: Throwable? = null,
     private val retentionResult: RetentionSettingsDto = RetentionSettingsDto(retention_days = 90),
     private val createPersonResult: PersonDto? = null,
     private val updatePersonResult: PersonDto? = null,
@@ -236,6 +239,23 @@ class FakeChoresApi(
         startDate: String?,
         endDate: String?
     ): List<AuthLogEntryDto> = authLogResult
+
+    var lastGetNotificationsSince: String? = null
+        private set
+    var lastGetNotificationsIncludeDismissed: Boolean? = null
+        private set
+    val ackedNotificationIds: MutableList<Int> = mutableListOf()
+
+    override suspend fun getNotifications(since: String?, includeDismissed: Boolean): List<NotificationDto> {
+        lastGetNotificationsSince = since
+        lastGetNotificationsIncludeDismissed = includeDismissed
+        notificationsError?.let { throw it }
+        return notificationsResult
+    }
+
+    override suspend fun ackNotification(notificationId: Int) {
+        ackedNotificationIds.add(notificationId)
+    }
 
     override suspend fun getConfig(): ConfigDto = configResult
 

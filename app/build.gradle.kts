@@ -175,6 +175,18 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.60")
     kapt("com.google.dagger:hilt-android-compiler:2.60")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    // Hilt/Dagger-generated Java imports com.google.errorprone.annotations.CanIgnoreReturnValue
+    // (class-retention only, not needed at runtime). It used to arrive transitively via
+    // androidx.hilt:hilt-work; issue #43 dropped hilt-work (see ADR 0007), so declare it
+    // explicitly here to keep the generated code on the compile classpath.
+    compileOnly("com.google.errorprone:error_prone_annotations:2.36.0")
+
+    // Background notification polling (issue #43, docs/adr/0007-notification-polling-via-workmanager.md):
+    // WorkManager runs the periodic NotificationPollWorker. The worker is a plain CoroutineWorker
+    // that pulls its Hilt dependencies via an @EntryPoint (EntryPointAccessors), so it needs NO
+    // extra annotation processor — androidx.hilt:hilt-compiler is too old to read AGP 9's Kotlin
+    // 2.x metadata and breaks kapt, so @HiltWorker/hilt-work are deliberately not used here.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Networking (issue #5, ADR 0002: Retrofit + OkHttp + kotlinx.serialization).
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
@@ -199,6 +211,9 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.4.0")
+    // Issue #43: TestListenableWorkerBuilder for driving NotificationPollWorker.doWork() under
+    // Robolectric without a real WorkManager scheduler.
+    testImplementation("androidx.work:work-testing:2.9.1")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
