@@ -5,10 +5,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.derekwinters.chores.MainActivity
@@ -17,19 +17,26 @@ import com.derekwinters.chores.data.local.ConnectionStatusStore
 import com.derekwinters.chores.data.local.PostedNotificationsStore
 import com.derekwinters.chores.data.model.Notification
 import com.derekwinters.chores.data.repository.NotificationRepository
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 
 /**
  * Issue #43: periodic worker that polls `GET /v1/notifications` and posts each new item as an
  * Android system notification, exactly once. Scheduled by [NotificationScheduler] as unique
- * periodic work; Hilt-injected via [androidx.hilt.work.HiltWorkerFactory] (see
- * [com.derekwinters.chores.ChoresApplication]).
+ * periodic work.
+ *
+ * This is a **plain** [CoroutineWorker] (not `@HiltWorker`): it obtains its dependencies from the
+ * Hilt graph at runtime via an `@EntryPoint` ([Deps]) rather than through `HiltWorkerFactory`.
+ * That deliberately avoids the `androidx.hilt:hilt-compiler` annotation processor, which is too
+ * old to read AGP 9's Kotlin 2.x metadata and breaks the kapt build (issue #43 CI). WorkManager's
+ * default factory instantiates this worker via its `(Context, WorkerParameters)` constructor, so
+ * no custom `Configuration.Provider` wiring is needed.
  *
  * Each run:
- * 1. Fetch un-dismissed notifications. On failure, [androidx.work.ListenableWorker.Result.retry]
- *    — nothing is recorded, so the last-successful-contact timestamp only ever reflects real
- *    successes.
+ * 1. Fetch un-dismissed notifications. On failure, [Result.retry] — nothing is recorded, so the
+ *    last-successful-contact timestamp only ever reflects real successes.
  * 2. Record the last-successful-contact timestamp (consumed by issue #44's offline alert).
  * 3. Post each item that is not acked, not dismissed, and not already locally recorded as posted;
  *    then record its id. Posting is skipped silently when `POST_NOTIFICATIONS` is not granted —
@@ -37,16 +44,26 @@ import dagger.assisted.AssistedInject
  *    granted. Acknowledgement is a user action (notification tap → `MainActivity`), never sent
  *    merely for posting.
  */
-@HiltWorker
-class NotificationPollWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val repository: NotificationRepository,
-    private val connectionStatusStore: ConnectionStatusStore,
-    private val postedStore: PostedNotificationsStore
+class NotificationPollWorker(
+    appContext: Context,
+    params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
 
+    /** The subset of the Hilt graph this worker needs, exposed for runtime access. */
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface Deps {
+        fun notificationRepository(): NotificationRepository
+        fun connectionStatusStore(): ConnectionStatusStore
+        fun postedNotificationsStore(): PostedNotificationsStore
+    }
+
     override suspend fun doWork(): Result {
+        val deps = depsProvider(applicationContext)
+        val repository = deps.notificationRepository()
+        val connectionStatusStore = deps.connectionStatusStore()
+        val postedStore = deps.postedNotificationsStore()
+
         val notifications = repository.getNotifications().getOrElse { return Result.retry() }
 
         connectionStatusStore.recordSuccessfulContact(System.currentTimeMillis())
@@ -100,5 +117,23 @@ class NotificationPollWorker @AssistedInject constructor(
     companion object {
         /** Unique periodic-work name (see [NotificationScheduler]). */
         const val WORK_NAME = "notification-poll"
+
+        /** Production resolution: read the real app-scoped Hilt graph. */
+        private val productionDepsProvider: (Context) -> Deps = { context ->
+            EntryPointAccessors.fromApplication(context.applicationContext, Deps::class.java)
+        }
+
+        /**
+         * Seam for resolving [Deps]. Defaults to [productionDepsProvider]; tests replace it to
+         * inject fakes without standing up a Hilt test component, and call [resetDepsProvider] in
+         * teardown.
+         */
+        @VisibleForTesting
+        var depsProvider: (Context) -> Deps = productionDepsProvider
+
+        @VisibleForTesting
+        fun resetDepsProvider() {
+            depsProvider = productionDepsProvider
+        }
     }
 }

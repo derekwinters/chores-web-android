@@ -177,12 +177,11 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Background notification polling (issue #43, docs/adr/0007-notification-polling-via-workmanager.md):
-    // WorkManager runs the periodic NotificationPollWorker; androidx.hilt:hilt-work + its own
-    // compiler supply @HiltWorker/HiltWorkerFactory support, which the Dagger Hilt compiler above
-    // does NOT cover on its own.
+    // WorkManager runs the periodic NotificationPollWorker. The worker is a plain CoroutineWorker
+    // that pulls its Hilt dependencies via an @EntryPoint (EntryPointAccessors), so it needs NO
+    // extra annotation processor — androidx.hilt:hilt-compiler is too old to read AGP 9's Kotlin
+    // 2.x metadata and breaks kapt, so @HiltWorker/hilt-work are deliberately not used here.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Networking (issue #5, ADR 0002: Retrofit + OkHttp + kotlinx.serialization).
     implementation("com.squareup.retrofit2:retrofit:3.0.0")

@@ -25,7 +25,8 @@ NotificationScheduler ──enqueues──▶ NotificationPollWorker (periodic, 
 
 ## The worker
 
-`notifications/NotificationPollWorker.kt` is a `@HiltWorker CoroutineWorker`. Each run:
+`notifications/NotificationPollWorker.kt` is a plain `CoroutineWorker` (see "Hilt worker wiring"
+below for why it isn't `@HiltWorker`). Each run:
 
 1. **Fetch** un-dismissed notifications via `NotificationRepository.getNotifications()`
    (`include_dismissed = false`). On failure it returns `Result.retry()` and records nothing.
@@ -71,11 +72,20 @@ user-configurable and re-arms the work.
 
 ## Hilt worker wiring
 
-- `ChoresApplication` implements `androidx.work.Configuration.Provider`, injecting
-  `HiltWorkerFactory`, so `@HiltWorker` workers can be constructor-injected.
-- The default `WorkManagerInitializer` is removed in `AndroidManifest.xml`
-  (`androidx.startup.InitializationProvider` with a `tools:node="remove"` meta-data), so
-  WorkManager uses the app's on-demand, Hilt-aware configuration instead of its default.
+The worker is a **plain `CoroutineWorker`**, not `@HiltWorker`. It resolves its Hilt dependencies
+at runtime through an `@EntryPoint` (`NotificationPollWorker.Deps`) via
+`EntryPointAccessors.fromApplication(...)`, exposing exactly `NotificationRepository`,
+`ConnectionStatusStore`, and `PostedNotificationsStore`.
+
+This avoids the `androidx.hilt:hilt-work` / `androidx.hilt:hilt-compiler` annotation processor:
+its 1.2.0 release cannot read AGP 9's Kotlin 2.x metadata and breaks the kapt build. The
+`@EntryPoint` approach reuses the existing Dagger-Hilt compiler only, needs no extra processor,
+and lets WorkManager's **default** factory/initializer instantiate the worker from its
+`(Context, WorkerParameters)` constructor — so `ChoresApplication` stays a plain `Application`
+(no `Configuration.Provider`) and the manifest keeps WorkManager's default initializer.
+
+A test seam (`NotificationPollWorker.depsProvider`, reset via `resetDepsProvider()`) lets unit
+tests inject fakes without standing up a Hilt test component.
 
 ## Permission behavior
 

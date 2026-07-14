@@ -7,8 +7,6 @@ import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
-import androidx.work.WorkerFactory
-import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.derekwinters.chores.data.local.FakeConnectionStatusStore
 import com.derekwinters.chores.data.network.FakeChoresApi
@@ -16,6 +14,7 @@ import com.derekwinters.chores.data.network.dto.NotificationDto
 import com.derekwinters.chores.data.repository.NotificationRepository
 import java.io.IOException
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -28,8 +27,12 @@ import org.robolectric.annotation.Config
 
 /**
  * Issue #43: unit coverage for [NotificationPollWorker] via `androidx.work:work-testing`'s
- * [TestListenableWorkerBuilder], under Robolectric so the real `NotificationManagerCompat` /
- * `SharedPreferences`-free fakes behave like the device.
+ * [TestListenableWorkerBuilder], under Robolectric so the real `NotificationManagerCompat`
+ * behaves like the device.
+ *
+ * The worker is a plain [androidx.work.CoroutineWorker] that resolves its Hilt dependencies via
+ * an `@EntryPoint`; these tests inject fakes through [NotificationPollWorker.depsProvider] rather
+ * than standing up a Hilt test component (reset in [tearDown]).
  *
  * Covers: once-per-item across re-runs, skip-acked/skip-dismissed, last-successful-contact
  * recording, and the retry-without-recording failure path.
@@ -46,6 +49,11 @@ class NotificationPollWorkerTest {
         // minSdk 33 requires the runtime grant for posting to actually reach the tray.
         shadowOf(ApplicationProvider.getApplicationContext<Application>())
             .grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    @After
+    fun tearDown() {
+        NotificationPollWorker.resetDepsProvider()
     }
 
     private fun notification(
@@ -69,16 +77,14 @@ class NotificationPollWorkerTest {
         store: FakeConnectionStatusStore
     ): NotificationPollWorker {
         val repository = NotificationRepository(api)
-        return TestListenableWorkerBuilder<NotificationPollWorker>(context)
-            .setWorkerFactory(object : WorkerFactory() {
-                override fun createWorker(
-                    appContext: Context,
-                    workerClassName: String,
-                    workerParameters: WorkerParameters
-                ): ListenableWorker =
-                    NotificationPollWorker(appContext, workerParameters, repository, store, store)
-            })
-            .build()
+        NotificationPollWorker.depsProvider = {
+            object : NotificationPollWorker.Deps {
+                override fun notificationRepository() = repository
+                override fun connectionStatusStore() = store
+                override fun postedNotificationsStore() = store
+            }
+        }
+        return TestListenableWorkerBuilder<NotificationPollWorker>(context).build()
     }
 
     private fun activeCount(): Int {

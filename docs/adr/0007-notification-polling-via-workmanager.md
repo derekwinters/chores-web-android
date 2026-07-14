@@ -25,10 +25,14 @@ Deliver notifications by **polling the backend from a periodic WorkManager worke
 - A unique `PeriodicWorkRequest` (`notification-poll`, `ExistingPeriodicWorkPolicy.KEEP`,
   `NetworkType.CONNECTED`) is enqueued post-login. The interval defaults to 60 minutes;
   issue #44 makes it user-configurable.
-- The worker is `@HiltWorker`, constructor-injected via `HiltWorkerFactory`. `ChoresApplication`
-  implements `Configuration.Provider`, and the default `WorkManagerInitializer` is removed from
-  the manifest (`androidx.startup.InitializationProvider` remove-node) so WorkManager uses the
-  Hilt-aware on-demand configuration.
+- The worker is a **plain `CoroutineWorker`** that pulls its dependencies from the Hilt graph at
+  runtime via a Hilt `@EntryPoint` (`EntryPointAccessors.fromApplication`), **not** `@HiltWorker`
+  / `HiltWorkerFactory`. WorkManager's default factory instantiates it from its
+  `(Context, WorkerParameters)` constructor and the default `WorkManagerInitializer` is left in
+  place — so no `Configuration.Provider` on `ChoresApplication` and no manifest initializer
+  changes are needed. This deliberately avoids the `androidx.hilt:hilt-compiler` (hilt-work)
+  annotation processor, whose 1.2.0 release cannot read AGP 9's Kotlin 2.x metadata and fails the
+  kapt build; the `@EntryPoint` route reuses the existing Dagger-Hilt compiler only.
 - **Delivery state stays server-owned**; the client does not try to model it. Because the
   server's `delivered_at` flips on the first *fetch* — and cannot distinguish "fetched" from
   "actually shown to the user" — the client keeps its **own local posted-ids record**
