@@ -33,7 +33,8 @@ class SettingsMenuContentTest {
         onNavigateToTheme: () -> Unit = {},
         onNavigateToData: () -> Unit = {},
         onNavigateToAbout: () -> Unit = {},
-        onNavigateToPreferences: () -> Unit = {}
+        onNavigateToPreferences: () -> Unit = {},
+        onNavigateToNotifications: () -> Unit = {}
     ) {
         composeTestRule.setContent {
             SettingsMenuContent(
@@ -44,7 +45,8 @@ class SettingsMenuContentTest {
                 onNavigateToTheme = onNavigateToTheme,
                 onNavigateToData = onNavigateToData,
                 onNavigateToAbout = onNavigateToAbout,
-                onNavigateToPreferences = onNavigateToPreferences
+                onNavigateToPreferences = onNavigateToPreferences,
+                onNavigateToNotifications = onNavigateToNotifications
             )
         }
     }
@@ -54,6 +56,7 @@ class SettingsMenuContentTest {
         setContent(isAdmin = true)
 
         composeTestRule.onNodeWithText("Preferences").assertExists()
+        composeTestRule.onNodeWithText("Notifications").assertExists()
         composeTestRule.onNodeWithText("General").assertExists()
         composeTestRule.onNodeWithText("Auth").assertExists()
         composeTestRule.onNodeWithText("Chores").assertExists()
@@ -69,6 +72,7 @@ class SettingsMenuContentTest {
         setContent(isAdmin = false)
 
         composeTestRule.onNodeWithText("Preferences").assertExists()
+        composeTestRule.onNodeWithText("Notifications").assertExists()
         composeTestRule.onNodeWithText("About").assertExists()
         composeTestRule.onNodeWithText("General").assertDoesNotExist()
         composeTestRule.onNodeWithText("Auth").assertDoesNotExist()
@@ -83,6 +87,17 @@ class SettingsMenuContentTest {
         setContent(isAdmin = false, onNavigateToPreferences = { navigated = true })
 
         composeTestRule.onNodeWithText("Preferences").performClick()
+
+        assert(navigated)
+    }
+
+    @Test
+    fun settingsMenuContent_notificationsRowClick_invokesNavigateToNotifications_forNonAdmin() {
+        var navigated = false
+        // Issue #44: Notifications is per-user, so a non-admin must be able to reach it.
+        setContent(isAdmin = false, onNavigateToNotifications = { navigated = true })
+
+        composeTestRule.onNodeWithText("Notifications").performClick()
 
         assert(navigated)
     }

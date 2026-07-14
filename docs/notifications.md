@@ -12,7 +12,7 @@ new notification to the system tray exactly once. Tapping a notification opens t
 acknowledges that item on the server.
 
 ```
-NotificationScheduler ──enqueues──▶ NotificationPollWorker (periodic, @HiltWorker)
+NotificationScheduler ──enqueues──▶ NotificationPollWorker (periodic, plain CoroutineWorker)
                                           │
                        GET /v1/notifications (un-dismissed)
                                           │
@@ -67,8 +67,69 @@ idempotently (`ensureChannels` is safe to call before every post). minSdk is 33,
   work to a 15-minute floor regardless,
 - `NetworkType.CONNECTED` constraint.
 
-It is called post-login from the app shell (`ui/ChoresApp.kt`). Issue #44 makes the interval
-user-configurable and re-arms the work.
+It is called post-login from the app shell (`ui/ChoresApp.kt`).
+
+### Configurable interval (issue #44)
+
+The interval is no longer hardcoded: `NotificationScheduler` reads it from
+`NotificationSettingsStore` (resolved from the Hilt graph via an `@EntryPoint`, the same pattern
+the worker uses) so it stays a plain `object` callable from composition.
+
+- `schedule(context)` (post-login) uses `ExistingPeriodicWorkPolicy.KEEP` — re-invoking on each
+  login is a no-op if already scheduled.
+- `reschedule(context)` (after the user changes the interval, from
+  `SettingsNotificationsViewModel` via `NotificationRescheduler`) uses
+  `ExistingPeriodicWorkPolicy.UPDATE` — it applies the new interval to the **same** unique work
+  in place, so no duplicate request is ever created.
+
+The chosen interval is coerced to WorkManager's **15-minute** periodic floor before enqueue.
+
+## Settings (issue #44)
+
+The `Settings ▸ Notifications` screen (`ui/settings/SettingsNotificationsScreen.kt`,
+`…ViewModel.kt`) makes the notification behavior configurable. It sits in the `settings/*` sub-nav
+graph (ADR-0003) and — unlike the admin-gated household config forms — is reachable by **every**
+user, because its contents are per-user (aligned with how Theme preferences are exposed, ADR-0005).
+
+**Storage split (deliberate):**
+
+| Setting | Scope | Storage |
+|---|---|---|
+| Poll interval | Device | Local `NotificationSettingsStore` (SharedPreferences) |
+| Offline-alert enabled + threshold days | Device | Local `NotificationSettingsStore` |
+| Per-type enable/disable (`{"chore_due": true}`) | Account | Server, `GET/PUT /v1/notifications/preferences` |
+
+Poll cadence and the offline threshold are **device** concerns (a phone on cellular may poll less
+often than a tablet at home), so they live on the device. The per-type map is an **account**
+concern — stored server-side so the backend can skip generating disabled types (backend#38, an
+absent preference row = enabled) — round-tripped via `NotificationRepository.getPreferences()` /
+`updatePreferences()`. The server per-type controls fail-soft: if that fetch fails the device-local
+controls stay usable (important precisely when offline) and a non-blocking error banner is shown.
+
+- **Poll interval**: a bounded picker offering only choices ≥ 15 min
+  (15 / 30 min, 1 / 3 / 6 / 12 / 24 h); default 60 min. Changing it persists locally and re-arms
+  the worker (`UPDATE`, above).
+- **Notification types**: a toggle per server-returned type (v1: "Chore due"), persisted via `PUT`
+  with success/error feedback (`SettingsBanner`).
+- **Offline alert**: an on/off toggle (default on) plus a threshold-days field (default 3).
+
+## Offline alert (issue #44)
+
+When the app hasn't successfully reached the backend in a configurable number of days, the poll
+worker posts a **local** "not connected" warning instead of silently doing nothing. It is computed
+in `NotificationPollWorker` from #43's `ConnectionStatusStore.lastSuccessfulContact()` timestamp —
+there is no backend interaction: this notification has no server id and is never acked.
+
+- It is checked on a **failed** poll (the failure path is the point) and fires when the alert is
+  enabled and `now − lastSuccessfulContact ≥ threshold`.
+- **No pre-login firing**: if no successful contact was ever recorded, it does not fire.
+- It uses its own stable notification id (`OFFLINE_ALERT_NOTIFICATION_ID`) on a separate
+  **"Connection alerts"** channel, so re-posts *update* the one warning rather than stacking, and
+  it is posted **at most once per breach** (latched via `NotificationSettingsStore.offlineAlertPosted`).
+- The next **successful** contact cancels the notification and clears the latch, so a future breach
+  can warn again.
+- Like chore posts, it is skipped (without latching) when `POST_NOTIFICATIONS` isn't granted, so it
+  can still fire once the permission is granted.
 
 ## Hilt worker wiring
 
@@ -108,6 +169,9 @@ Consumes chores-web-backend#39 (shape source of truth: the golden `openapi.json`
 
 - `GET /v1/notifications?since=&include_dismissed=` → `NotificationDto[]`
 - `POST /v1/notifications/{id}/ack`
+- `GET /v1/notifications/preferences` → `{type: bool}` (issue #44) — a bare JSON object, not a
+  wrapper, so the client models it as a `Map<String, Boolean>` (`NotificationPreferencesDto`).
+- `PUT /v1/notifications/preferences` with the same map shape.
 
 Both ride the existing interceptor stack (`BaseUrlInterceptor` rewrites to the user-entered
 backend, `AuthInterceptor` attaches the bearer token) via relative `v1/…` paths — no interceptor

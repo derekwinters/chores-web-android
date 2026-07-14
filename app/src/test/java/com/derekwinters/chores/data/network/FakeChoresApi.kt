@@ -15,6 +15,7 @@ import com.derekwinters.chores.data.network.dto.LoginRequestDto
 import com.derekwinters.chores.data.network.dto.LoginResponseDto
 import com.derekwinters.chores.data.network.dto.LogEntryDto
 import com.derekwinters.chores.data.network.dto.NotificationDto
+import com.derekwinters.chores.data.network.dto.NotificationPreferencesDto
 import com.derekwinters.chores.data.network.dto.PersonDto
 import com.derekwinters.chores.data.network.dto.UserStatsDto
 import com.derekwinters.chores.data.network.dto.PointsLogEntryDto
@@ -78,6 +79,10 @@ class FakeChoresApi(
     private val logResult: List<LogEntryDto> = emptyList(),
     private val notificationsResult: List<NotificationDto> = emptyList(),
     private val notificationsError: Throwable? = null,
+    private val notificationPreferencesResult: NotificationPreferencesDto = emptyMap(),
+    private val notificationPreferencesError: Throwable? = null,
+    private val updateNotificationPreferencesResult: NotificationPreferencesDto? = null,
+    private val updateNotificationPreferencesError: Throwable? = null,
     private val retentionResult: RetentionSettingsDto = RetentionSettingsDto(retention_days = 90),
     private val createPersonResult: PersonDto? = null,
     private val updatePersonResult: PersonDto? = null,
@@ -255,6 +260,22 @@ class FakeChoresApi(
 
     override suspend fun ackNotification(notificationId: Int) {
         ackedNotificationIds.add(notificationId)
+    }
+
+    var lastUpdatedNotificationPreferences: NotificationPreferencesDto? = null
+        private set
+
+    override suspend fun getNotificationPreferences(): NotificationPreferencesDto {
+        notificationPreferencesError?.let { throw it }
+        return notificationPreferencesResult
+    }
+
+    override suspend fun updateNotificationPreferences(
+        preferences: NotificationPreferencesDto
+    ): NotificationPreferencesDto {
+        lastUpdatedNotificationPreferences = preferences
+        updateNotificationPreferencesError?.let { throw it }
+        return updateNotificationPreferencesResult ?: preferences
     }
 
     override suspend fun getConfig(): ConfigDto = configResult

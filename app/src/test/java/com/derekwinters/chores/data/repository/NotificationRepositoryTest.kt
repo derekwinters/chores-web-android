@@ -119,4 +119,53 @@ class NotificationRepositoryTest {
             (result.exceptionOrNull() as ApiException).message
         )
     }
+
+    // --- Issue #44: per-type preferences (bare `type -> bool` JSON object) ---
+
+    @Test
+    fun getPreferences_parsesBareMap() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody("""{"chore_due":true}""")
+        )
+
+        val result = repository.getPreferences()
+
+        assertTrue(result.isSuccess)
+        assertEquals(mapOf("chore_due" to true), result.getOrThrow())
+
+        val recorded = server.takeRequest()
+        assertEquals("GET", recorded.method)
+        assertEquals("/v1/notifications/preferences", recorded.path)
+        assertEquals("Bearer tok123", recorded.getHeader("Authorization"))
+    }
+
+    @Test
+    fun updatePreferences_putsMapAndParsesResult() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody("""{"chore_due":false}""")
+        )
+
+        val result = repository.updatePreferences(mapOf("chore_due" to false))
+
+        assertTrue(result.isSuccess)
+        assertEquals(mapOf("chore_due" to false), result.getOrThrow())
+
+        val recorded = server.takeRequest()
+        assertEquals("PUT", recorded.method)
+        assertEquals("/v1/notifications/preferences", recorded.path)
+        assertEquals("""{"chore_due":false}""", recorded.body.readUtf8())
+    }
+
+    @Test
+    fun getPreferences_serverError_mapsToFailure() = runTest {
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        val result = repository.getPreferences()
+
+        assertTrue(result.isFailure)
+        assertEquals(
+            "Something went wrong. Please try again.",
+            (result.exceptionOrNull() as ApiException).message
+        )
+    }
 }

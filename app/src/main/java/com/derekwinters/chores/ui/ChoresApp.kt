@@ -94,6 +94,7 @@ import com.derekwinters.chores.ui.settings.SettingsAuthScreen
 import com.derekwinters.chores.ui.settings.SettingsChoresScreen
 import com.derekwinters.chores.ui.settings.SettingsGeneralScreen
 import com.derekwinters.chores.ui.settings.SettingsMenuContent
+import com.derekwinters.chores.ui.settings.SettingsNotificationsScreen
 import com.derekwinters.chores.ui.theme.AppThemeViewModel
 import com.derekwinters.chores.ui.theme.ChoresTheme
 import com.derekwinters.chores.ui.theme.Space
@@ -306,6 +307,7 @@ fun ChoresAppContent(
     },
     pointsLogContent: @Composable () -> Unit = { PointsLogScreen() },
     preferencesContent: @Composable () -> Unit = { ThemePreferenceScreen() },
+    notificationsContent: @Composable () -> Unit = { SettingsNotificationsScreen() },
     themeAdminContent: @Composable () -> Unit = { ThemeAdminScreen() },
     currentUserProvider: @Composable () -> UiState<CurrentUser> = {
         val viewModel: CurrentUserViewModel = hiltViewModel()
@@ -378,6 +380,7 @@ fun ChoresAppContent(
                 dataSettingsContent = dataSettingsContent,
                 pointsLogContent = pointsLogContent,
                 preferencesContent = preferencesContent,
+                notificationsContent = notificationsContent,
                 themeAdminContent = themeAdminContent
             )
         }
@@ -411,6 +414,7 @@ private fun ChoresAuthenticatedScaffold(
     dataSettingsContent: @Composable (DataSettingsNavActions) -> Unit,
     pointsLogContent: @Composable () -> Unit,
     preferencesContent: @Composable () -> Unit,
+    notificationsContent: @Composable () -> Unit,
     themeAdminContent: @Composable () -> Unit
 ) {
     val navController = rememberNavController()
@@ -689,7 +693,8 @@ private fun ChoresAuthenticatedScaffold(
                         onNavigateToTheme = { navController.navigate("settings/theme") },
                         onNavigateToData = { navController.navigate("settings/data") },
                         onNavigateToAbout = { navController.navigate("settings/about") },
-                        onNavigateToPreferences = { navController.navigate(ChoresDestination.Preferences.route) }
+                        onNavigateToPreferences = { navController.navigate(ChoresDestination.Preferences.route) },
+                        onNavigateToNotifications = { navController.navigate("settings/notifications") }
                     )
                 }
                 composable(
@@ -773,6 +778,14 @@ private fun ChoresAuthenticatedScaffold(
                     popEnterTransition = sharedAxisPopEnter,
                     popExitTransition = sharedAxisPopExit
                 ) { preferencesContent() }
+                // Issue #44: per-user Notifications settings, in the same settings/* sub-nav graph.
+                composable(
+                    route = "settings/notifications",
+                    enterTransition = sharedAxisEnter,
+                    exitTransition = sharedAxisExit,
+                    popEnterTransition = sharedAxisPopEnter,
+                    popExitTransition = sharedAxisPopExit
+                ) { notificationsContent() }
             }
         }
     }

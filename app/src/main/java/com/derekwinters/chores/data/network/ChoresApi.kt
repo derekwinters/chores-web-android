@@ -15,6 +15,7 @@ import com.derekwinters.chores.data.network.dto.LoginRequestDto
 import com.derekwinters.chores.data.network.dto.LoginResponseDto
 import com.derekwinters.chores.data.network.dto.LogEntryDto
 import com.derekwinters.chores.data.network.dto.NotificationDto
+import com.derekwinters.chores.data.network.dto.NotificationPreferencesDto
 import com.derekwinters.chores.data.network.dto.PersonDto
 import com.derekwinters.chores.data.network.dto.UserStatsDto
 import com.derekwinters.chores.data.network.dto.PointsLogEntryDto
@@ -232,6 +233,23 @@ interface ChoresApi {
      */
     @POST("v1/notifications/{id}/ack")
     suspend fun ackNotification(@Path("id") notificationId: Int)
+
+    /**
+     * Issue #44 (chores-web-backend#39): the caller's per-type notification-enablement map (an
+     * account-level preference, unlike the device-local poll interval). Bare `type -> bool` JSON
+     * object; every known type is present, absent-in-DB reported as enabled (backend#38).
+     */
+    @GET("v1/notifications/preferences")
+    suspend fun getNotificationPreferences(): NotificationPreferencesDto
+
+    /**
+     * Issue #44: upsert the caller's per-type preferences. Keys naming unknown types are ignored
+     * server-side; the response echoes the resulting map covering every known type.
+     */
+    @PUT("v1/notifications/preferences")
+    suspend fun updateNotificationPreferences(
+        @Body preferences: NotificationPreferencesDto
+    ): NotificationPreferencesDto
 
     // --- Config / Settings (issues #12, #20, #22) ---
 
