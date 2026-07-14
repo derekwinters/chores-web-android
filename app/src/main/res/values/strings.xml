@@ -139,4 +139,8 @@
     <string name="dashboard_goal_format">Goal: %1$d pts</string>
     <string name="dashboard_due_now_label">Due Now</string>
     <string name="dashboard_due_soon_label">Due Soon</string>
+
+    <!-- Notifications (issue #43) -->
+    <string name="notification_channel_chores_name">Chores due</string>
+    <string name="notification_channel_chores_description">Reminders when your chores are due.</string>
 </resources>

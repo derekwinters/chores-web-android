@@ -38,12 +38,20 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.derekwinters.chores.notifications.NotificationScheduler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -231,6 +239,29 @@ fun ChoresApp(
     sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
     val isAuthenticated by sessionViewModel.isAuthenticated.collectAsState()
+
+    // Issue #43: once signed in, request POST_NOTIFICATIONS (minSdk 33 → always a runtime
+    // permission) and schedule the periodic notification poll. Denial is non-fatal — the launcher
+    // callback is intentionally empty, and scheduling runs regardless so polling and tap-to-ack
+    // still work; only the actual system-notification posting is skipped without the grant.
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* granted or not: non-fatal, nothing to do here */ }
+
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            NotificationScheduler.schedule(context)
+        }
+    }
+
     ChoresAppContent(
         isAuthenticated = isAuthenticated,
         onLogout = sessionViewModel::logout

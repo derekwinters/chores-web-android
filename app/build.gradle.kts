@@ -176,6 +176,14 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.60")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    // Background notification polling (issue #43, docs/adr/0007-notification-polling-via-workmanager.md):
+    // WorkManager runs the periodic NotificationPollWorker; androidx.hilt:hilt-work + its own
+    // compiler supply @HiltWorker/HiltWorkerFactory support, which the Dagger Hilt compiler above
+    // does NOT cover on its own.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
+
     // Networking (issue #5, ADR 0002: Retrofit + OkHttp + kotlinx.serialization).
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
@@ -199,6 +207,9 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.4.0")
+    // Issue #43: TestListenableWorkerBuilder for driving NotificationPollWorker.doWork() under
+    // Robolectric without a real WorkManager scheduler.
+    testImplementation("androidx.work:work-testing:2.9.1")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
