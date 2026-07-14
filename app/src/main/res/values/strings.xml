@@ -14,6 +14,13 @@
     <string name="user_management_screen_title">Manage Users</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_preferences">Preferences</string>
+    <!-- Issue #45: the in-app Notification Log, reached from the top-bar bell action (not a
+         bottom-nav tab). -->
+    <string name="nav_notifications">Notifications</string>
+    <string name="notifications_bell_description">Notifications</string>
+    <!-- Issue #45: the bell's unread-count badge, announced to accessibility services since the
+         numeral alone isn't otherwise labeled (mirrors chores_due_now_badge_description). -->
+    <string name="notifications_unread_badge_description">%1$d unread notifications</string>
     <string name="user_menu">User menu</string>
     <string name="logout">Logout</string>
     <!-- Issue #180: non-clickable header shown above Logout in the avatar dropdown, since the

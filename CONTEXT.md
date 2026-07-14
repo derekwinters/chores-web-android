@@ -16,3 +16,11 @@ Add terms here only when they are specific to this Android client and have no eq
   computed from the last-successful-contact timestamp (`ConnectionStatusStore`). It has **no**
   server-side notification identity: no server id, never acknowledged, cleared on the next
   successful contact.
+- **Notification Log** — the in-app screen (`ui/notifications/`, issue #45) listing the signed-in
+  user's notifications from `GET /v1/notifications`, reached from the top-bar bell. Unlike the
+  system-tray posts (issue #43), it **retains** acknowledged items as read history rather than
+  hiding them; dismissed items stay server-filtered out (`include_dismissed=false`). Here
+  **"unread" means unacknowledged** (`acknowledged_at == null`) — the same acknowledgement the
+  system-notification tap performs, exposed as a per-row action. The canonical Notification and
+  Acknowledgement terms live in chores-web's glossary (see the pointer above); "Notification Log"
+  and its "unread = unacknowledged" reading are Android-client-only.

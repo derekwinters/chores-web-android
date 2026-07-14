@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
@@ -85,6 +86,7 @@ import com.derekwinters.chores.ui.common.DbReadinessGate
 import com.derekwinters.chores.ui.dashboard.DashboardNavActions
 import com.derekwinters.chores.ui.dashboard.DashboardScreen
 import com.derekwinters.chores.ui.log.ActivityLogScreen
+import com.derekwinters.chores.ui.notifications.NotificationLogScreen
 import com.derekwinters.chores.ui.settings.AuthLogScreen
 import com.derekwinters.chores.ui.settings.DataSettingsNavActions
 import com.derekwinters.chores.ui.settings.DataSettingsScreen
@@ -171,6 +173,15 @@ sealed class ChoresDestination(
     data object Users : ChoresDestination("users", R.string.nav_users, Icons.Filled.People, adminOnly = true)
     data object Settings : ChoresDestination("settings", R.string.nav_settings, Icons.Filled.Settings)
     data object Preferences : ChoresDestination("settings/preferences", R.string.nav_preferences, Icons.Filled.Palette)
+
+    /**
+     * Issue #45: the in-app Notification Log. Reached from the top-bar bell action, **not** a
+     * bottom-nav tab (ADR-0004's bottom bar is a fixed five, ADR-0005 puts global actions in the
+     * top bar), so it is registered as a top-level NavHost destination but deliberately absent from
+     * `bottomNavDestinations` — the same "listed as a destination but not a bottom tab" treatment
+     * as [Preferences].
+     */
+    data object Notifications : ChoresDestination("notifications", R.string.nav_notifications, Icons.Filled.Notifications)
 }
 
 /**
@@ -308,6 +319,8 @@ fun ChoresAppContent(
     pointsLogContent: @Composable () -> Unit = { PointsLogScreen() },
     preferencesContent: @Composable () -> Unit = { ThemePreferenceScreen() },
     notificationsContent: @Composable () -> Unit = { SettingsNotificationsScreen() },
+    /** Issue #45: the in-app Notification Log, reached from the top-bar bell. */
+    notificationLogContent: @Composable () -> Unit = { NotificationLogScreen() },
     themeAdminContent: @Composable () -> Unit = { ThemeAdminScreen() },
     currentUserProvider: @Composable () -> UiState<CurrentUser> = {
         val viewModel: CurrentUserViewModel = hiltViewModel()
@@ -338,6 +351,17 @@ fun ChoresAppContent(
         val viewModel: NavBadgeViewModel = hiltViewModel()
         val chores by viewModel.chores.collectAsState()
         dueNowCountForUser(chores, username)
+    },
+    /**
+     * Issue #45: the unread-notification count for the top-bar bell badge. Defaults to the real
+     * (Hilt-wired, Activity-scoped) [NotificationBadgeViewModel] with the count derived at this
+     * call site via [unreadNotificationCount] (raw list exposed, count computed here — the
+     * NavBadge decoupling pattern); overridable in tests.
+     */
+    notificationUnreadCountProvider: @Composable () -> Int = {
+        val viewModel: NotificationBadgeViewModel = hiltViewModel()
+        val notifications by viewModel.notifications.collectAsState()
+        unreadNotificationCount(notifications)
     }
 ) {
     // Issue #62: ChoresTheme now wraps the unauthenticated screen graph (AuthGateScreen's
@@ -362,6 +386,7 @@ fun ChoresAppContent(
             val username = (currentUserState as? UiState.Success)?.data?.username
             val appTitle = currentTitleProvider()
             val dueNowCount = dueNowCountProvider(username)
+            val notificationUnreadCount = notificationUnreadCountProvider()
 
             ChoresAuthenticatedScaffold(
                 isAdmin = isAdmin,
@@ -369,6 +394,7 @@ fun ChoresAppContent(
                 onLogout = onLogout,
                 appTitle = appTitle,
                 dueNowCount = dueNowCount,
+                notificationUnreadCount = notificationUnreadCount,
                 dashboardContent = dashboardContent,
                 choresContent = choresContent,
                 choreFormContent = choreFormContent,
@@ -381,6 +407,7 @@ fun ChoresAppContent(
                 pointsLogContent = pointsLogContent,
                 preferencesContent = preferencesContent,
                 notificationsContent = notificationsContent,
+                notificationLogContent = notificationLogContent,
                 themeAdminContent = themeAdminContent
             )
         }
@@ -402,6 +429,8 @@ private fun ChoresAuthenticatedScaffold(
     appTitle: String?,
     /** Issue #167: the signed-in user's own "due now" chore count, shown as a badge on the Chores tab. */
     dueNowCount: Int,
+    /** Issue #45: unread-notification count for the top-bar bell badge (0 hides the badge). */
+    notificationUnreadCount: Int,
     modifier: Modifier = Modifier,
     dashboardContent: @Composable (DashboardNavActions) -> Unit,
     choresContent: @Composable (assignee: String?, dueWithin: String?, navActions: ChoresNavActions) -> Unit,
@@ -415,6 +444,7 @@ private fun ChoresAuthenticatedScaffold(
     pointsLogContent: @Composable () -> Unit,
     preferencesContent: @Composable () -> Unit,
     notificationsContent: @Composable () -> Unit,
+    notificationLogContent: @Composable () -> Unit,
     themeAdminContent: @Composable () -> Unit
 ) {
     val navController = rememberNavController()
@@ -443,6 +473,9 @@ private fun ChoresAuthenticatedScaffold(
         // satisfies isCurrent(Settings) since it starts with "settings" -- check the more specific
         // Preferences match first so the subtitle reads "Preferences" rather than "Settings" there.
         isCurrent(ChoresDestination.Preferences) -> stringResource(R.string.nav_preferences)
+        // Issue #45: the Notification Log isn't a bottom-nav tab, so it won't match
+        // visibleDestinations below — give its top-bar title an explicit branch.
+        isCurrent(ChoresDestination.Notifications) -> stringResource(R.string.nav_notifications)
         else -> visibleDestinations.firstOrNull(::isCurrent)
             ?.labelRes
             ?.let { stringResource(it) }
@@ -523,6 +556,43 @@ private fun ChoresAuthenticatedScaffold(
                     }
                 },
                 actions = {
+                    // Issue #45 (ADR-0005): a global top-bar bell opening the Notification Log,
+                    // with an unread-count badge sourced by the decoupled Activity-scoped
+                    // NotificationBadgeViewModel. Shown on every authenticated screen (unlike the
+                    // per-screen Add-Chore action below); launchSingleTop so re-tapping the bell
+                    // while already on the log doesn't stack duplicate entries.
+                    val bellDescription = stringResource(R.string.notifications_bell_description)
+                    IconButton(
+                        onClick = {
+                            navController.navigate(ChoresDestination.Notifications.route) {
+                                launchSingleTop = true
+                            }
+                        },
+                        modifier = Modifier.testTag("notificationBell")
+                    ) {
+                        if (notificationUnreadCount > 0) {
+                            val badgeDescription = stringResource(
+                                R.string.notifications_unread_badge_description,
+                                notificationUnreadCount
+                            )
+                            BadgedBox(
+                                badge = {
+                                    Badge(
+                                        modifier = Modifier
+                                            .testTag("notificationUnreadBadge")
+                                            .semantics { contentDescription = badgeDescription }
+                                    ) {
+                                        Text(notificationUnreadCount.toString())
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Filled.Notifications, contentDescription = bellDescription)
+                            }
+                        } else {
+                            Icon(Icons.Filled.Notifications, contentDescription = bellDescription)
+                        }
+                    }
+
                     // Issue #180 (ADR-0005): the top bar is shared across every screen, so this
                     // per-screen action only renders while the Chores list screen itself is
                     // current (exact match -- see [isChoresListScreen]), wired directly to
@@ -673,6 +743,16 @@ private fun ChoresAuthenticatedScaffold(
             composable(ChoresDestination.Users.route) {
                 usersContent { username -> navController.navigate(logRouteWithArgs(chore = null, person = username)) }
             }
+            // Issue #45: the Notification Log, opened from the top-bar bell. A drill-in from any
+            // screen, so it uses the shared-axis horizontal motion like the other detail screens
+            // rather than the top-level fade-through default.
+            composable(
+                route = ChoresDestination.Notifications.route,
+                enterTransition = sharedAxisEnter,
+                exitTransition = sharedAxisExit,
+                popEnterTransition = sharedAxisPopEnter,
+                popExitTransition = sharedAxisPopExit
+            ) { notificationLogContent() }
             // Issue #146: navigation-compose 2.7.7's `navigation(...)` graph builder doesn't
             // accept enter/exitTransition params (added in a later library version), so the
             // shared-axis drill-in transition is set per-composable within this graph instead

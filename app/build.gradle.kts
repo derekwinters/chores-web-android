@@ -151,8 +151,9 @@ tasks.withType<Test>().configureEach {
 dependencies {
     // Design tokens — pinned exact version, bumped via Dependabot (rollout:
     // derekwinters/chores-web-docs#11, this repo's #13; 0.3.0 adds the component
-    // tier consumed by Iteration 4, #24).
-    implementation("com.derekwinters.chores:design-tokens:0.3.0")
+    // tier consumed by Iteration 4, #24; 0.4.0 adds the notification component
+    // token group consumed by the in-app Notification Log, #45).
+    implementation("com.derekwinters.chores:design-tokens:0.4.0")
 
     implementation("androidx.core:core-ktx:1.19.0")
     implementation("androidx.activity:activity-compose:1.13.0")

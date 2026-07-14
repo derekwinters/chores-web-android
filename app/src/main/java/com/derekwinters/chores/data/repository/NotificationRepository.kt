@@ -34,8 +34,19 @@ class NotificationRepository @Inject constructor(
             .map { dtos -> dtos.map { it.toDomain() } }
 
     /**
-     * Acknowledges one notification (notification-tap user action). Idempotent server-side, so a
-     * double-tap or a replayed intent is harmless.
+     * Issue #45: the in-app Notification Log fetch. Same endpoint as [getNotifications] with the
+     * log's semantics fixed in one place: dismissed items excluded (`include_dismissed=false`),
+     * acknowledged ("read") items retained (unlike the poll worker, which then defensively skips
+     * them before posting). The server returns rows newest-first. Callers derive unread state from
+     * [Notification.isUnread].
+     */
+    suspend fun getNotificationLog(): Result<List<Notification>> =
+        getNotifications(includeDismissed = false)
+
+    /**
+     * Acknowledges one notification (notification-tap user action, or the in-app log's per-row
+     * acknowledge — one semantic, two entry points). Idempotent server-side, so a double-tap or a
+     * replayed intent is harmless.
      */
     suspend fun acknowledge(notificationId: Int): Result<Unit> =
         safeApiCall { api.ackNotification(notificationId) }

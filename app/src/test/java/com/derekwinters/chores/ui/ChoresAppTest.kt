@@ -44,6 +44,9 @@ class ChoresAppTest {
         username: String = "alice",
         onLogout: () -> Unit = {},
         dueNowCount: Int = 0,
+        // Issue #45: unread-notification count for the top-bar bell badge; the real provider is
+        // Hilt-wired (NotificationBadgeViewModel), so it's faked here like dueNowCountProvider.
+        notificationUnreadCount: Int = 0,
         currentTitleProvider: @Composable () -> String? = { "Test Household" },
         // Issue #180: real ChoreFormScreen is Hilt-wired, so tests exercising the new top-bar
         // Add-Chore action's navigation need a fake here, same as every other content slot.
@@ -62,11 +65,13 @@ class ChoresAppTest {
                 usersContent = { Text("Fake Users") },
                 settingsContent = { Text("Fake Settings") },
                 preferencesContent = { Text("Fake Preferences") },
+                notificationLogContent = { Text("Fake Notification Log") },
                 currentUserProvider = { UiState.Success(CurrentUser(username, isAdmin)) },
                 isDatabaseReadyProvider = { true },
                 currentThemeProvider = { null },
                 currentTitleProvider = currentTitleProvider,
-                dueNowCountProvider = { dueNowCount }
+                dueNowCountProvider = { dueNowCount },
+                notificationUnreadCountProvider = { notificationUnreadCount }
             )
         }
     }
@@ -357,5 +362,42 @@ class ChoresAppTest {
 
         composeTestRule.onNodeWithTag("navItem_settings").performClick()
         composeTestRule.onNodeWithContentDescription("Add Chore").assertDoesNotExist()
+    }
+
+    // Issue #45: the top-bar notification bell + unread badge, and navigation to the log.
+
+    @Test
+    fun choresApp_topBar_notificationBell_isAlwaysVisible() {
+        // Unlike the per-screen Add-Chore action, the bell is a global top-bar action shown on
+        // every authenticated screen (here: the Dashboard start destination).
+        setContent()
+
+        composeTestRule.onNodeWithTag("notificationBell").assertExists()
+    }
+
+    @Test
+    fun choresApp_topBar_notificationBell_noUnread_showsNoBadge() {
+        setContent(notificationUnreadCount = 0)
+
+        composeTestRule.onNodeWithTag("notificationUnreadBadge").assertDoesNotExist()
+    }
+
+    @Test
+    fun choresApp_topBar_notificationBell_unread_showsBadgeWithCount() {
+        setContent(notificationUnreadCount = 4)
+
+        composeTestRule.onNodeWithTag("notificationUnreadBadge", useUnmergedTree = true).assertExists()
+        composeTestRule.onNodeWithTag("notificationUnreadBadge", useUnmergedTree = true)
+            .onChildren()[0]
+            .assertTextEquals("4")
+    }
+
+    @Test
+    fun choresApp_topBar_notificationBell_navigatesToNotificationLog() {
+        setContent()
+
+        composeTestRule.onNodeWithTag("notificationBell").performClick()
+
+        composeTestRule.onNodeWithText("Fake Notification Log").assertExists()
     }
 }

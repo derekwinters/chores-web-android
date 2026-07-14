@@ -26,6 +26,14 @@ data class Notification(
 ) {
     /** Acknowledged and dismissed items are never (re-)posted as system notifications. */
     val isActionable: Boolean get() = acknowledgedAt == null && dismissedAt == null
+
+    /**
+     * Issue #45: "unread" in the in-app Notification Log means unacknowledged. Dismissed items are
+     * server-filtered out of the log (`include_dismissed=false`), so an unset [acknowledgedAt]
+     * alone is the unread signal there — a read (acknowledged) item is retained and shown as
+     * history rather than hidden.
+     */
+    val isUnread: Boolean get() = acknowledgedAt == null
 }
 
 fun NotificationDto.toDomain(): Notification = Notification(
