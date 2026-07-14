@@ -175,6 +175,11 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.60")
     kapt("com.google.dagger:hilt-android-compiler:2.60")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    // Hilt/Dagger-generated Java imports com.google.errorprone.annotations.CanIgnoreReturnValue
+    // (class-retention only, not needed at runtime). It used to arrive transitively via
+    // androidx.hilt:hilt-work; issue #43 dropped hilt-work (see ADR 0007), so declare it
+    // explicitly here to keep the generated code on the compile classpath.
+    compileOnly("com.google.errorprone:error_prone_annotations:2.36.0")
 
     // Background notification polling (issue #43, docs/adr/0007-notification-polling-via-workmanager.md):
     // WorkManager runs the periodic NotificationPollWorker. The worker is a plain CoroutineWorker
