@@ -79,6 +79,7 @@ class FakeChoresApi(
     private val logResult: List<LogEntryDto> = emptyList(),
     private val notificationsResult: List<NotificationDto> = emptyList(),
     private val notificationsError: Throwable? = null,
+    private val notificationAckError: Throwable? = null,
     private val notificationPreferencesResult: NotificationPreferencesDto = emptyMap(),
     private val notificationPreferencesError: Throwable? = null,
     private val updateNotificationPreferencesResult: NotificationPreferencesDto? = null,
@@ -259,6 +260,7 @@ class FakeChoresApi(
     }
 
     override suspend fun ackNotification(notificationId: Int) {
+        notificationAckError?.let { throw it }
         ackedNotificationIds.add(notificationId)
     }
 

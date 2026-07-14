@@ -5,8 +5,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -24,12 +29,14 @@ import com.derekwinters.chores.data.model.AppVersionUiState
 import com.derekwinters.chores.data.model.BackendVersionUiState
 import com.derekwinters.chores.data.model.Chore
 import com.derekwinters.chores.data.model.CurrentTheme
+import com.derekwinters.chores.data.model.Notification
 import com.derekwinters.chores.data.model.ThemeDefaultInfo
 import com.derekwinters.chores.data.model.ThemeOption
 import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.network.dto.ConfigDto
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.chores.ChoreListContent
+import com.derekwinters.chores.ui.notifications.NotificationLogContent
 import com.derekwinters.chores.ui.settings.SettingsAboutContent
 import com.derekwinters.chores.ui.theme.ChoresTheme
 import com.derekwinters.chores.ui.theme.PillBadgeTokens
@@ -408,5 +415,93 @@ class ComponentSnapshotTest {
     @Test
     fun settingsAbout_sections_paper() {
         captureSettingsAbout(paperTheme, "settingsabout_sections_paper.png")
+    }
+
+    // --- Notification Log (issue #45: unread accent bar/fill + read history, empty state) --------
+
+    // One unread notification (accent bar + translucent fill + unread dot + "Mark as read") and one
+    // acknowledged/read one (plain), covering both row styles the NotificationTokens drive.
+    private val unreadNotification = Notification(
+        id = 1,
+        personId = 7,
+        type = "chore_due",
+        choreId = 42,
+        title = "Dishes are due",
+        body = "Please do the dishes.",
+        createdAt = "2026-07-14T08:00:00Z",
+        deliveredAt = "2026-07-14T08:00:00Z",
+        acknowledgedAt = null,
+        dismissedAt = null
+    )
+    private val readNotification = Notification(
+        id = 2,
+        personId = 7,
+        type = "chore_due",
+        choreId = 43,
+        title = "Trash was due",
+        body = "Take out the trash.",
+        createdAt = "2026-07-13T08:00:00Z",
+        deliveredAt = "2026-07-13T08:00:00Z",
+        acknowledgedAt = "2026-07-13T09:00:00Z",
+        dismissedAt = null
+    )
+
+    private fun captureNotificationLog(theme: ThemeOption, fileName: String, notifications: List<Notification>) {
+        composeTestRule.setContent {
+            ChoresTheme(themeOption = theme) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    NotificationLogContent(
+                        uiState = UiState.Success(notifications),
+                        onAcknowledge = {}
+                    )
+                }
+            }
+        }
+        composeTestRule.onRoot().captureRoboImage(goldenPath(fileName))
+    }
+
+    @Test
+    fun notificationLog_mix_dark() {
+        captureNotificationLog(darkTheme, "notificationlog_mix_dark.png", listOf(unreadNotification, readNotification))
+    }
+
+    @Test
+    fun notificationLog_mix_paper() {
+        captureNotificationLog(paperTheme, "notificationlog_mix_paper.png", listOf(unreadNotification, readNotification))
+    }
+
+    @Test
+    fun notificationLog_empty_dark() {
+        captureNotificationLog(darkTheme, "notificationlog_empty_dark.png", emptyList())
+    }
+
+    @Test
+    fun notificationLog_empty_paper() {
+        captureNotificationLog(paperTheme, "notificationlog_empty_paper.png", emptyList())
+    }
+
+    // --- Notification bell badge (top-bar unread count; M3 BadgedBox + Badge over the bell icon) --
+
+    @Composable
+    private fun NotificationBellBadgeCatalog() {
+        BadgedBox(
+            modifier = Modifier.padding(Space.lg),
+            badge = { Badge { Text("3") } }
+        ) {
+            Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
+        }
+    }
+
+    @Test
+    fun notificationBadge_bell_dark() {
+        captureThemedContent(darkTheme, "notificationbadge_bell_dark.png") { NotificationBellBadgeCatalog() }
+    }
+
+    @Test
+    fun notificationBadge_bell_paper() {
+        captureThemedContent(paperTheme, "notificationbadge_bell_paper.png") { NotificationBellBadgeCatalog() }
     }
 }

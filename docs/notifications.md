@@ -131,6 +131,47 @@ there is no backend interaction: this notification has no server id and is never
 - Like chore posts, it is skipped (without latching) when `POST_NOTIFICATIONS` isn't granted, so it
   can still fire once the permission is granted.
 
+## In-app notification log (issue #45)
+
+Beyond the system tray, the app has an **in-app Notification Log** (`ui/notifications/`) listing
+the signed-in user's notifications from `GET /v1/notifications`. It is reached from a **top-bar
+bell action** (present on every authenticated screen) rather than a bottom-nav tab — the bottom bar
+is a fixed five (ADR-0004) and global actions live in the top bar (ADR-0005). Tapping the bell
+navigates to the `notifications` route.
+
+- **Read history is retained.** Unlike the tray posts (which skip acknowledged/dismissed items),
+  the log fetches with `include_dismissed=false` and **keeps acknowledged items**, rendering them
+  as read history visually distinguished from unread ones. Dismissed items stay server-filtered
+  out; there is no dismissed-management UI in v1.
+- **Unread = unacknowledged.** A row is "unread" when `acknowledged_at == null`
+  (`Notification.isUnread`). Unread rows carry a leading accent bar + translucent fill + an unread
+  dot and a **"Mark as read"** action; read rows render plain.
+- **Acknowledge from the screen** calls the same `POST /v1/notifications/{id}/ack` the tray tap
+  uses (one semantic, two entry points), via `NotificationRepository.acknowledge(id)`.
+  `NotificationLogViewModel` applies it **optimistically** (the row flips to read immediately and
+  reverts if the PUT fails), mirroring the Notifications settings screen's per-type toggle.
+
+### Unread badge
+
+The bell carries an **unread-count badge** sourced by `NotificationBadgeViewModel` — an
+Activity-scoped sibling of `NavBadgeViewModel` (the due-now Chores badge) following the same
+decoupling rationale: its **own 60-second polling loop**, its own fetch, and it exposes the **raw
+notification list** rather than a pre-computed count. The count is derived at the call site via
+`unreadNotificationCount(...)` (unread = `acknowledged_at == null`; empty/unloaded yields 0, so the
+badge simply doesn't render until there's something to show). Because the badge polls independently
+of the log screen's ViewModel, a screen-side acknowledge is reflected in the badge on its next tick
+rather than instantly — an intentional consequence of the decoupling.
+
+### Design tokens
+
+All new badge/log-row **dimensions** come from the design-tokens **notification component group**
+(design-tokens 0.4.0, bumped from 0.3.0 in `app/build.gradle.kts`) via a `NotificationTokens`
+accessor in `ui/theme/Tokens.kt` (mirroring `PillBadgeTokens`) — no hardcoded color/dimension
+literals in the new UI. Colors stay **theme-driven** (`LocalThemeOption`'s `primary` for the unread
+accent, with a `MaterialTheme` fallback), the same split the Activity Log's badges use. New states
+(unread/read mix, empty, bell badge) are locked in with Roborazzi goldens
+(`ComponentSnapshotTest`, see `snapshot-testing.md`).
+
 ## Hilt worker wiring
 
 The worker is a **plain `CoroutineWorker`**, not `@HiltWorker`. It resolves its Hilt dependencies

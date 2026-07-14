@@ -1,5 +1,6 @@
 package com.derekwinters.chores.ui.common
 
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -27,6 +28,30 @@ fun formatDateTime(iso: String): String {
             .withLocale(Locale.getDefault())
             .withZone(ZoneId.systemDefault())
             .format(instant)
+    } catch (e: DateTimeParseException) {
+        iso
+    }
+}
+
+/**
+ * Relative "N ago" timestamp — thresholds/strings mirror chores-web's `formatRelativeTimestamp`
+ * exactly (just now / Nm ago / Nh ago / Nd ago). Used by issue #45's Notification Log rows; the
+ * same wording the Activity Log row already renders inline. Falls back to the raw string unchanged
+ * if it can't be parsed, same defensive stance as [formatDateTime]/[formatDate].
+ */
+fun formatRelativeTimestamp(iso: String): String {
+    return try {
+        val instant = Instant.parse(iso)
+        val duration = Duration.between(instant, Instant.now())
+        val minutes = duration.toMinutes()
+        val hours = duration.toHours()
+        val days = duration.toDays()
+        when {
+            minutes < 1 -> "just now"
+            minutes < 60 -> "${minutes}m ago"
+            hours < 24 -> "${hours}h ago"
+            else -> "${days}d ago"
+        }
     } catch (e: DateTimeParseException) {
         iso
     }

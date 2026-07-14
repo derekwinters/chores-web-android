@@ -29,6 +29,9 @@ palettes. Goldens are PNGs in `app/src/test/snapshots/`, named
 | Theme preference tiles (`ThemePreferenceContent`, selected + unselected) | `themepreference_tiles_*` |
 | `AlertDialog` (chore delete confirmation shape) | `alertdialog_deleteconfirm_*` |
 | Settings About screen (`SettingsAboutContent`; own-app version, backend version, repo links — issue #35) | `settingsabout_sections_*` |
+| Notification Log (`NotificationLogContent`; unread accent bar/fill + read history mix — issue #45) | `notificationlog_mix_*` |
+| Notification Log empty state (issue #45) | `notificationlog_empty_*` |
+| Notification bell unread badge (`BadgedBox` + `Badge` over the bell icon — issue #45) | `notificationbadge_bell_*` |
 
 `PillBadge`, `ChoreRow`, and `ThemeOptionCard` are private composables; the tests snapshot the
 closest public wrapper (`ChoreListContent`, `ThemePreferenceContent`) or an equivalent inline

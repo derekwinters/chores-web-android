@@ -96,6 +96,38 @@ fun elevationForLevel(levelIndex: Int): Dp = when (levelIndex) {
  */
 val pillShape: RoundedCornerShape = RoundedCornerShape(DesignTokens.Component.PILL_BADGE_RADIUS.dp)
 
+/**
+ * Fully-rounded notification badge shape ([DesignTokens.Component.NOTIFICATION_BADGE_RADIUS] =
+ * 9999dp) — the count/unread indicator on the top-bar bell and the log-row unread dot. Renders
+ * identically to `RoundedCornerShape(percent = 50)` at any badge size (Compose clamps to half the
+ * smaller dimension), same clamp behavior as [pillShape].
+ */
+val notificationBadgeShape: RoundedCornerShape =
+    RoundedCornerShape(DesignTokens.Component.NOTIFICATION_BADGE_RADIUS.dp)
+
+/** Notification log-row corner radius ([DesignTokens.Component.NOTIFICATION_LOG_ROW_RADIUS]). */
+val notificationLogRowShape: RoundedCornerShape =
+    RoundedCornerShape(DesignTokens.Component.NOTIFICATION_LOG_ROW_RADIUS.dp)
+
+/**
+ * Issue #45: notification component tokens (design-tokens 0.4.0's notification group) for the
+ * in-app Notification Log's unread badge and log rows, mirroring [PillBadgeTokens]' thin-accessor
+ * approach — every value is a straight re-export of the generated artifact, no literals. Badge and
+ * log-row styling in `ui/notifications/` read dimensions exclusively from here; colors come from
+ * the runtime theme (`LocalThemeOption`), not from tokens.
+ */
+object NotificationTokens {
+    val badgeSize: Dp = DesignTokens.Component.NOTIFICATION_BADGE_SIZE.dp
+    val badgePaddingX: Dp = DesignTokens.Component.NOTIFICATION_BADGE_PADDING_X.dp
+    val logRowPaddingX: Dp = DesignTokens.Component.NOTIFICATION_LOG_ROW_PADDING_X.dp
+    val logRowPaddingY: Dp = DesignTokens.Component.NOTIFICATION_LOG_ROW_PADDING_Y.dp
+    val unreadBarWidth: Dp = DesignTokens.Component.NOTIFICATION_LOG_ROW_UNREAD_BAR_WIDTH.dp
+    val unreadFillAlpha: Float = DesignTokens.Component.NOTIFICATION_LOG_ROW_UNREAD_FILL_ALPHA
+
+    /** Resolved from a level index onto the foundation elevation scale, same as [CardTokens]. */
+    val bannerElevation: Dp = elevationForLevel(DesignTokens.Component.NOTIFICATION_BANNER_ELEVATION)
+}
+
 /** Pill badge (Activity Log's action/target badges) component tokens. */
 object PillBadgeTokens {
     val paddingX: Dp = DesignTokens.Component.PILL_BADGE_PADDING_X.dp
