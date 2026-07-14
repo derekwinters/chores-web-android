@@ -6,7 +6,7 @@ type: agent
 
 # GitHub Issue Implementation Orchestrator Agent
 
-Automated workflow coordinator for implementing GitHub issues end-to-end. Implements 11-state machine: validate, prepare, doc-pre, TDD loop, test, build-verify, user-review, code-commit, doc-validate, finalize, complete.
+Automated workflow coordinator for implementing GitHub issues end-to-end. Implements 12-state machine: validate, prepare, doc-pre, TDD loop, test, build-verify, user-review, code-commit, doc-validate, reflect, finalize, complete.
 
 ## IMPORTANT: Display Workflow Diagram on Every State Transition
 
@@ -40,7 +40,7 @@ START
   │   ├─ RED: write failing test for this behavior only
   │   ├─ GREEN: write minimum code to make test pass
   │   └─ REFACTOR: clean up if needed, re-run tests
-  ├─ Adaptive: minor deviations handled silently, note all deviations for doc-validate
+  ├─ Adaptive: minor deviations handled silently, note all deviations to carry forward to reflect
   ├─ No per-cycle pauses — runs fully autonomously until all behaviors implemented
   └─ Result: All behaviors implemented, deviations list ready
           ↓
@@ -76,13 +76,23 @@ START
   ├─ If corrections needed: commit `docs: reconcile docs with implementation #<N>`
   └─ If no corrections: skip commit
           ↓
-[10] finalize
+[10] reflect (compilation-only — no commits, no file writes)
+  ├─ Gather tdd-loop deviations, doc-validate findings, and mid-run decisions
+  ├─ Compose the `## Deviations and Decisions` block (see PR Body Format below)
+  ├─ Empty `### Deviations` and/or `### Decisions` subsection → emit `None.`
+  ├─ Standalone mode: block becomes the FIRST content of the PR body (above `## Summary`)
+  ├─ Milestone mode: return the block verbatim in the per-issue summary (this
+  │   agent does not write the PR body — the milestone orchestrator owns it)
+  └─ Result: `## Deviations and Decisions` block ready
+          ↓
+[11] finalize
   ├─ Call: /implementation-finalize <issue-number> <commit-type>
-  ├─ Push branch, create PR (conventional commit format title)
+  ├─ Push branch, create PR (conventional commit format title; body opens with
+  │   the reflect block, then `## Summary`)
   ├─ Remove in-development label
   └─ Result: PR URL returned
           ↓
-[11] complete
+[12] complete
   ├─ Display: PR URL to user
   ├─ Info: Issue auto-closes when merged
   └─ END
@@ -96,9 +106,9 @@ Display workflow diagram on each state transition. Highlight destination with he
 GITHUB ISSUE IMPLEMENTATION WORKFLOW
 ====================================
 
-┌──────────┐  ┌─────────┐  ┌─────────┐  ┌──────────┐  ┌──────┐  ┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│ Validate ├─▶│ Prepare ├─▶│ Doc Pre ├─▶│ TDD Loop ├─▶│ Test ├─▶│Build   ├─▶│User Rev. ├─▶│Code Cmt  ├─▶│Doc Valid ├─▶│ Finalize ├─▶│ Complete │
-└──────────┘  └─────────┘  └─────────┘  └──────────┘  └──────┘  └────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+┌──────────┐  ┌─────────┐  ┌─────────┐  ┌──────────┐  ┌──────┐  ┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│ Validate ├─▶│ Prepare ├─▶│ Doc Pre ├─▶│ TDD Loop ├─▶│ Test ├─▶│Build   ├─▶│User Rev. ├─▶│Code Cmt  ├─▶│Doc Valid ├─▶│ Reflect  ├─▶│ Finalize ├─▶│ Complete │
+└──────────┘  └─────────┘  └─────────┘  └──────────┘  └──────┘  └────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
 ```
 
 Example at TDD Loop stage:
@@ -107,9 +117,9 @@ Example at TDD Loop stage:
 GITHUB ISSUE IMPLEMENTATION WORKFLOW
 ====================================
 
-┌──────────┐  ┌─────────┐  ┌─────────┐  ┏━━━━━━━━━━┓  ┌──────┐  ┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│ Validate ├─▶│ Prepare ├─▶│ Doc Pre ├─▶┃ TDD Loop ┃─▶│ Test ├─▶│Build   ├─▶│User Rev. ├─▶│Code Cmt  ├─▶│Doc Valid ├─▶│ Finalize ├─▶│ Complete │
-└──────────┘  └─────────┘  └─────────┘  ┗━━━━━━━━━━┛  └──────┘  └────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+┌──────────┐  ┌─────────┐  ┌─────────┐  ┏━━━━━━━━━━┓  ┌──────┐  ┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│ Validate ├─▶│ Prepare ├─▶│ Doc Pre ├─▶┃ TDD Loop ┃─▶│ Test ├─▶│Build   ├─▶│User Rev. ├─▶│Code Cmt  ├─▶│Doc Valid ├─▶│ Reflect  ├─▶│ Finalize ├─▶│ Complete │
+└──────────┘  └─────────┘  └─────────┘  ┗━━━━━━━━━━┛  └──────┘  └────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
 ```
 
 Also display issue context at each state:
@@ -117,7 +127,7 @@ Also display issue context at each state:
 ```
 Issue #263: Agent and Skill Refresh
 State: [4] TDD Loop
-Progress: 4/11
+Progress: 4/12
 Branch: feat-issue-263
 Behaviors remaining: 6/10
 ```
@@ -131,7 +141,7 @@ The TDD loop is the core of the implementation stage. It runs fully autonomously
    - **RED**: Write one failing test targeting this behavior. Run it, confirm it fails for the right reason.
    - **GREEN**: Write the minimum production code to make the test pass. Run all tests, confirm green.
    - **REFACTOR**: Clean up code if needed. Run tests again to confirm still green.
-3. Track deviations: if a behavior needs to be implemented differently than specified, note it with reason. Do not pause — proceed with best judgment and surface at doc-validate.
+3. Track deviations: if a behavior needs to be implemented differently than specified, note it with reason. Do not pause — proceed with best judgment and carry the deviation forward to reflect (state [10]), which composes the `## Deviations and Decisions` block for the PR body.
 4. After all behaviors complete, summarize any deviations for the user before moving to test stage.
 
 ## Commit Strategy
@@ -141,6 +151,32 @@ The TDD loop is the core of the implementation stage. It runs fully autonomously
 | doc-pre [3] | `docs:` | Before TDD, always |
 | code-commit [8] | `feat:/fix:/refactor:` | After user approval |
 | doc-validate [9] | `docs:` | After finalize, only if corrections needed |
+
+Reflect [10] and finalize [11] make **no commits** — reflect only composes text,
+finalize only pushes and opens the PR.
+
+## PR Body Format
+
+Every PR this agent opens begins with a `## Deviations and Decisions` section —
+it is the FIRST content of the body, above `## Summary`, and is present even
+when both subsections are empty. The reflect state ([10]) composes it from the
+tdd-loop deviations, doc-validate findings, and mid-run decisions. Use exactly
+this format:
+
+```markdown
+## Deviations and Decisions
+
+### Deviations
+- **<file/area>**: <what deviated from the contract and why>.
+
+### Decisions
+- **<ambiguity>**: <how it was resolved>.  Prevention: <what would prevent recurrence>.
+```
+
+An empty `### Deviations` or `### Decisions` subsection emits `None.` under that
+heading (the heading and section still appear). In milestone mode this agent
+does not write the PR body; it returns this exact block in its per-issue summary
+and the milestone orchestrator aggregates it (see `milestone-implementation-orchestrator.md`).
 
 ## State Persistence
 
@@ -158,7 +194,7 @@ Resumable by checking branch state and git log.
 ### Input
 - `issue_number` (GitHub issue #)
 - `branch` (required) — the exact branch to work on. Never invented or derived by this agent; standalone callers must supply one (e.g. `<type>-issue-<number>`), milestone-mode callers supply the shared milestone branch. Missing `branch` → ABORT at validate.
-- `existing_pr` (optional) — milestone mode only. When present, state [10] skips push+PR creation and does not modify the PR body (the milestone orchestrator owns it exclusively); this agent only reports its summary back.
+- `existing_pr` (optional) — milestone mode only. When present, state [11] skips push+PR creation and does not modify the PR body (the milestone orchestrator owns it exclusively); this agent only reports its summary back, and that summary carries the `## Deviations and Decisions` block composed at reflect (state [10]) verbatim for the milestone orchestrator to aggregate.
 
 ### Output
 - Fully implemented issue with:
@@ -180,7 +216,8 @@ Resumable by checking branch state and git log.
 7. *User review pause*
 8. *(code-commit)* — agent commits code directly
 9. *(doc-validate)* — agent reconciles + commits if needed
-10. **implementation-finalize** — push + PR creation
+10. *(reflect)* — agent composes the `## Deviations and Decisions` block (no commits, no file writes)
+11. **implementation-finalize** — push + PR creation
 
 ### Error Handling
 - Invalid issue number → error message

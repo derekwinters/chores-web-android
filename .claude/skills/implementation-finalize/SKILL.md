@@ -18,7 +18,10 @@ Pushes branch to origin and creates the pull request. Commits are made at earlie
 1. **Push branch**: `git push -u origin <branch-name>`
 2. **Create PR**:
    - Title: conventional commit format — `<type>: <description> (#<number>)`
-   - Body: summary of changes, link to issue, "Closes #<number>" on its own line
+   - Body: opens with `## Deviations and Decisions` (the block composed at the
+     orchestrator's reflect state, `None.` under any empty subsection), then
+     `## Summary` bullets, then `## Implementation`, then `Closes #<number>` on
+     its own line (see PR Format below)
 3. **Remove `in-development` label**: `gh issue edit <N> --remove-label "in-development"`
 4. **Return PR URL**
 
@@ -29,18 +32,34 @@ Pushes branch to origin and creates the pull request. Commits are made at earlie
 
 ## PR Format
 
+The body opens with `## Deviations and Decisions` (composed by the orchestrator
+at its reflect state), present even when empty, followed by `## Summary`,
+`## Implementation`, and a bare `Closes #<number>` line:
+
 ```
 Title: <type>: <description> (#<issue-number>)
 
 Body:
+## Deviations and Decisions
+
+### Deviations
+- **<file/area>**: <what deviated from the contract and why>.
+
+### Decisions
+- **<ambiguity>**: <how it was resolved>.  Prevention: <what would prevent recurrence>.
+
 ## Summary
 - <bullet points summarizing changes>
 
-## Issue
-Closes #<issue-number>
+## Implementation
+- Android: <what changed>
+- Tests: <what was tested>
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Closes #<issue-number>
 ```
+
+An empty `### Deviations` or `### Decisions` subsection emits `None.` under its
+heading (the heading still appears).
 
 ## Milestone Mode
 
