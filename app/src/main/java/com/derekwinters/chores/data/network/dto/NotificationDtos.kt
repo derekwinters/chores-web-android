@@ -32,3 +32,17 @@ data class NotificationDto(
     val acknowledged_at: String? = null,
     val dismissed_at: String? = null
 )
+
+/**
+ * Per-type notification-enablement map (issue #44), the on-the-wire body of both
+ * `GET /v1/notifications/preferences` and `PUT /v1/notifications/preferences`
+ * (chores-web-backend#39). The backend models it as a bare JSON object of `type -> bool`
+ * (Pydantic `RootModel[dict[str, bool]]`, e.g. `{"chore_due": true}`), not a wrapper object, so
+ * this is a plain [Map] rather than a `data class` — kotlinx.serialization has a built-in
+ * `Map<String, Boolean>` serializer that matches that shape exactly.
+ *
+ * v1 emits exactly one key, `"chore_due"`. Absent types are treated as enabled server-side
+ * (backend#38), and the response always reports every known type, so the client can render a
+ * toggle per returned key without a hardcoded type list.
+ */
+typealias NotificationPreferencesDto = Map<String, Boolean>

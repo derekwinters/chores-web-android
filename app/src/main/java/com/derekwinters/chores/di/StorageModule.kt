@@ -3,10 +3,14 @@ package com.derekwinters.chores.di
 import com.derekwinters.chores.data.auth.CredentialStore
 import com.derekwinters.chores.data.auth.EncryptedCredentialStore
 import com.derekwinters.chores.data.local.ConnectionStatusStore
+import com.derekwinters.chores.data.local.NotificationSettingsStore
 import com.derekwinters.chores.data.local.PostedNotificationsStore
 import com.derekwinters.chores.data.local.SharedPrefsConnectionStatusStore
+import com.derekwinters.chores.data.local.SharedPrefsNotificationSettingsStore
 import com.derekwinters.chores.data.local.SharedPrefsVersionCheckCache
 import com.derekwinters.chores.data.local.VersionCheckCache
+import com.derekwinters.chores.notifications.NotificationRescheduler
+import com.derekwinters.chores.notifications.WorkManagerNotificationRescheduler
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -42,4 +46,17 @@ abstract class StorageModule {
     @Binds
     @Singleton
     abstract fun bindPostedNotificationsStore(impl: SharedPrefsConnectionStatusStore): PostedNotificationsStore
+
+    /**
+     * Issue #44: device-local notification settings (poll interval, offline-alert enabled +
+     * threshold). Its own prefs file, distinct from the connection-status store above.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindNotificationSettingsStore(impl: SharedPrefsNotificationSettingsStore): NotificationSettingsStore
+
+    /** Issue #44: re-arms the poll worker when the user changes the interval. */
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRescheduler(impl: WorkManagerNotificationRescheduler): NotificationRescheduler
 }

@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.derekwinters.chores.data.local.FakeConnectionStatusStore
+import com.derekwinters.chores.data.local.FakeNotificationSettingsStore
 import com.derekwinters.chores.data.network.FakeChoresApi
 import com.derekwinters.chores.data.network.dto.NotificationDto
 import com.derekwinters.chores.data.repository.NotificationRepository
@@ -74,7 +75,8 @@ class NotificationPollWorkerTest {
 
     private fun buildWorker(
         api: FakeChoresApi,
-        store: FakeConnectionStatusStore
+        store: FakeConnectionStatusStore,
+        settingsStore: FakeNotificationSettingsStore = FakeNotificationSettingsStore()
     ): NotificationPollWorker {
         val repository = NotificationRepository(api)
         NotificationPollWorker.depsProvider = {
@@ -82,6 +84,7 @@ class NotificationPollWorkerTest {
                 override fun notificationRepository() = repository
                 override fun connectionStatusStore() = store
                 override fun postedNotificationsStore() = store
+                override fun notificationSettingsStore() = settingsStore
             }
         }
         return TestListenableWorkerBuilder<NotificationPollWorker>(context).build()
@@ -90,6 +93,12 @@ class NotificationPollWorkerTest {
     private fun activeCount(): Int {
         val manager = context.getSystemService(NotificationManager::class.java)
         return shadowOf(manager).size()
+    }
+
+    private fun offlineAlertActive(): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        return shadowOf(manager)
+            .getNotification(NotificationPollWorker.OFFLINE_ALERT_NOTIFICATION_ID) != null
     }
 
     @Test
@@ -175,5 +184,96 @@ class NotificationPollWorkerTest {
         assertEquals(0, store.recordContactCallCount)
         assertTrue(store.postedIds().isEmpty())
         assertEquals(0, activeCount())
+    }
+
+    // --- Issue #44: offline alert ---
+
+    private val dayMillis = 24L * 60L * 60L * 1000L
+
+    @Test
+    fun failedPollPastThreshold_postsOfflineAlertOnce_doesNotStack() = runBlocking {
+        val api = FakeChoresApi(notificationsError = IOException("offline"))
+        val store = FakeConnectionStatusStore()
+        // Last contact was 5 days ago; threshold is 3 days.
+        store.recordSuccessfulContact(System.currentTimeMillis() - 5 * dayMillis)
+        val settings = FakeNotificationSettingsStore(offlineAlertThresholdDays = 3)
+
+        val first = buildWorker(api, store, settings).doWork()
+
+        assertEquals(ListenableWorker.Result.retry(), first)
+        assertTrue("offline alert should be posted past threshold", offlineAlertActive())
+        assertEquals(1, activeCount())
+        assertTrue(settings.offlineAlertPosted())
+
+        // A second failed run must NOT stack a second alert (same stable id, latched).
+        buildWorker(api, store, settings).doWork()
+        assertTrue(offlineAlertActive())
+        assertEquals(1, activeCount())
+    }
+
+    @Test
+    fun failedPollWithinThreshold_doesNotPostOfflineAlert() = runBlocking {
+        val api = FakeChoresApi(notificationsError = IOException("offline"))
+        val store = FakeConnectionStatusStore()
+        // Last contact was 1 day ago; threshold is 3 days -> not breached.
+        store.recordSuccessfulContact(System.currentTimeMillis() - 1 * dayMillis)
+        val settings = FakeNotificationSettingsStore(offlineAlertThresholdDays = 3)
+
+        buildWorker(api, store, settings).doWork()
+
+        assertFalse(offlineAlertActive())
+        assertFalse(settings.offlineAlertPosted())
+    }
+
+    @Test
+    fun failedPollNeverContacted_doesNotPostOfflineAlert() = runBlocking {
+        // No successful contact was ever recorded (pre-login): the alert must not fire.
+        val api = FakeChoresApi(notificationsError = IOException("offline"))
+        val store = FakeConnectionStatusStore()
+        val settings = FakeNotificationSettingsStore(offlineAlertThresholdDays = 3)
+
+        buildWorker(api, store, settings).doWork()
+
+        assertFalse(offlineAlertActive())
+        assertFalse(settings.offlineAlertPosted())
+    }
+
+    @Test
+    fun offlineAlertDisabled_doesNotPostEvenPastThreshold() = runBlocking {
+        val api = FakeChoresApi(notificationsError = IOException("offline"))
+        val store = FakeConnectionStatusStore()
+        store.recordSuccessfulContact(System.currentTimeMillis() - 5 * dayMillis)
+        val settings = FakeNotificationSettingsStore(
+            offlineAlertEnabled = false,
+            offlineAlertThresholdDays = 3
+        )
+
+        buildWorker(api, store, settings).doWork()
+
+        assertFalse(offlineAlertActive())
+        assertFalse(settings.offlineAlertPosted())
+    }
+
+    @Test
+    fun successfulContact_clearsStandingOfflineAlert() = runBlocking {
+        val store = FakeConnectionStatusStore()
+        store.recordSuccessfulContact(System.currentTimeMillis() - 5 * dayMillis)
+        val settings = FakeNotificationSettingsStore(offlineAlertThresholdDays = 3)
+
+        // First: a failed poll posts the offline alert.
+        buildWorker(FakeChoresApi(notificationsError = IOException("offline")), store, settings).doWork()
+        assertTrue(offlineAlertActive())
+        assertTrue(settings.offlineAlertPosted())
+
+        // Then: a successful poll clears the alert and resets the latch.
+        val success = buildWorker(
+            FakeChoresApi(notificationsResult = listOf(notification(1))),
+            store,
+            settings
+        ).doWork()
+
+        assertEquals(ListenableWorker.Result.success(), success)
+        assertFalse("successful contact should cancel the offline alert", offlineAlertActive())
+        assertFalse(settings.offlineAlertPosted())
     }
 }

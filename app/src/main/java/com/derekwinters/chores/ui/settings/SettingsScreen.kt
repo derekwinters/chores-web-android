@@ -50,7 +50,9 @@ data class SettingsMenuNavActions(
     val onNavigateToChores: () -> Unit = {},
     val onNavigateToTheme: () -> Unit = {},
     val onNavigateToData: () -> Unit = {},
-    val onNavigateToAbout: () -> Unit = {}
+    val onNavigateToAbout: () -> Unit = {},
+    /** Issue #44: per-user Notifications settings — reachable by non-admins. */
+    val onNavigateToNotifications: () -> Unit = {}
 )
 
 /**
@@ -236,6 +238,7 @@ fun SettingsMenuContent(
     onNavigateToData: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToPreferences: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -246,6 +249,9 @@ fun SettingsMenuContent(
         verticalArrangement = Arrangement.spacedBy(Space.sm)
     ) {
         SettingsMenuItem(label = "Preferences", onClick = onNavigateToPreferences)
+        // Issue #44: Notifications is per-user (poll interval + offline alert + per-user
+        // preferences), so it sits with Preferences above the admin-only rows.
+        SettingsMenuItem(label = "Notifications", onClick = onNavigateToNotifications)
         if (isAdmin) {
             SettingsMenuItem(label = "General", onClick = onNavigateToGeneral)
             SettingsMenuItem(label = "Auth", onClick = onNavigateToAuth)

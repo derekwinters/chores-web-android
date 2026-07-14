@@ -143,4 +143,10 @@
     <!-- Notifications (issue #43) -->
     <string name="notification_channel_chores_name">Chores due</string>
     <string name="notification_channel_chores_description">Reminders when your chores are due.</string>
+
+    <!-- Notifications: offline alert (issue #44) -->
+    <string name="notification_channel_connection_name">Connection alerts</string>
+    <string name="notification_channel_connection_description">Warns when the app hasn\'t been able to reach your server.</string>
+    <string name="notification_offline_title">Not connected</string>
+    <string name="notification_offline_body_format">The app hasn\'t reached your server in over %1$d days. Notifications may be out of date.</string>
 </resources>

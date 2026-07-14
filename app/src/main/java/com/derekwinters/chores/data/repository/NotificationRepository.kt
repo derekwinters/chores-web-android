@@ -3,6 +3,7 @@ package com.derekwinters.chores.data.repository
 import com.derekwinters.chores.data.model.Notification
 import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.network.ChoresApi
+import com.derekwinters.chores.data.network.dto.NotificationPreferencesDto
 import com.derekwinters.chores.data.network.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,4 +39,21 @@ class NotificationRepository @Inject constructor(
      */
     suspend fun acknowledge(notificationId: Int): Result<Unit> =
         safeApiCall { api.ackNotification(notificationId) }
+
+    /**
+     * Issue #44: the caller's per-type notification preferences (`GET /v1/notifications/
+     * preferences`). The map key is a notification type (v1: `"chore_due"`), the value its
+     * enabled state; every known type is present in the response.
+     */
+    suspend fun getPreferences(): Result<NotificationPreferencesDto> =
+        safeApiCall { api.getNotificationPreferences() }
+
+    /**
+     * Issue #44: persist the caller's per-type preferences (`PUT /v1/notifications/preferences`).
+     * Returns the server's resulting map (unknown keys dropped, every known type present).
+     */
+    suspend fun updatePreferences(
+        preferences: NotificationPreferencesDto
+    ): Result<NotificationPreferencesDto> =
+        safeApiCall { api.updateNotificationPreferences(preferences) }
 }
