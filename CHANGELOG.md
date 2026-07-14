@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/derekwinters/chores-web-android/compare/v1.1.1...v1.2.0) (2026-07-14)
+
+
+### Features
+
+* add in-app notification log screen with unread bell badge ([#50](https://github.com/derekwinters/chores-web-android/issues/50)) ([8244d9c](https://github.com/derekwinters/chores-web-android/commit/8244d9c96a5cd3fb320d88f05e9f4a124c2905fa))
+* **notifications:** add settings for poll interval, preferences, and offline alert ([#49](https://github.com/derekwinters/chores-web-android/issues/49)) ([18a29fd](https://github.com/derekwinters/chores-web-android/commit/18a29fda09c01682ef0f7fe7ce7a04a380cea5db))
+* poll backend for notifications and post system notifications ([#47](https://github.com/derekwinters/chores-web-android/issues/47)) ([6f86c0d](https://github.com/derekwinters/chores-web-android/commit/6f86c0d165e62962b8e75395040dbd242d95bdfb))
+
 ## [1.1.1](https://github.com/derekwinters/chores-web-android/compare/v1.1.0...v1.1.1) (2026-07-12)
 
 
