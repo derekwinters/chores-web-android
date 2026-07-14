@@ -3,6 +3,7 @@ package com.derekwinters.chores.ui.settings
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -147,7 +148,10 @@ class SettingsMenuContentTest {
         var navigated = false
         setContent(onNavigateToData = { navigated = true })
 
-        composeTestRule.onNodeWithText("Data").performClick()
+        // The admin menu (now with the added Notifications row) can exceed the test viewport, so
+        // scroll the Data row into view before clicking — otherwise the tap lands off-screen and
+        // the click never reaches the row's onClick.
+        composeTestRule.onNodeWithText("Data").performScrollTo().performClick()
 
         assert(navigated)
     }

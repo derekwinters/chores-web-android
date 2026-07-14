@@ -1,6 +1,5 @@
 package com.derekwinters.chores.ui.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +14,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -195,17 +195,16 @@ private fun PollIntervalPicker(
     onSelectInterval: (Long) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // Anchor is an OutlinedButton, not a read-only OutlinedTextField: a text field's own pointer
+    // input swallows the tap before an outer `clickable` sees it, so the menu wouldn't open under
+    // a test's (or a user's) click. A Button's onClick fires reliably.
     Box(modifier = Modifier.fillMaxWidth().padding(top = Space.sm)) {
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true }
-                .testTag("PollIntervalField"),
-            value = intervalLabel(selectedMinutes),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Poll interval") }
-        )
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth().testTag("PollIntervalField")
+        ) {
+            Text(text = intervalLabel(selectedMinutes), modifier = Modifier.fillMaxWidth())
+        }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             POLL_INTERVAL_CHOICES.forEach { (minutes, label) ->
                 DropdownMenuItem(

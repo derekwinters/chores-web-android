@@ -4,6 +4,7 @@ import com.derekwinters.chores.MainDispatcherRule
 import com.derekwinters.chores.data.local.FakeNotificationSettingsStore
 import com.derekwinters.chores.data.network.ApiException
 import com.derekwinters.chores.data.network.FakeChoresApi
+import com.derekwinters.chores.data.network.HttpErrorMessages
 import com.derekwinters.chores.data.repository.NotificationRepository
 import com.derekwinters.chores.notifications.NotificationRescheduler
 import com.derekwinters.chores.ui.UiState
@@ -88,7 +89,10 @@ class SettingsNotificationsViewModelTest {
         // Local settings still present (usable offline), preferences empty + error surfaced.
         assertEquals(30L, data.pollIntervalMinutes)
         assertTrue(data.preferences.isEmpty())
-        assertEquals("offline", data.preferencesError)
+        // safeApiCall maps a thrown exception to the app's friendly network-error message (the
+        // user-facing string every repository surfaces), so that is what the VM reports — not the
+        // raw exception text.
+        assertEquals(HttpErrorMessages.NETWORK_ERROR, data.preferencesError)
     }
 
     @Test
@@ -158,10 +162,12 @@ class SettingsNotificationsViewModelTest {
         vm.setPreference("chore_due", false)
         advanceUntilIdle()
 
-        // Reverted to the pre-toggle server value; error surfaced via saveState.
+        // Reverted to the pre-toggle server value; error surfaced via saveState. safeApiCall maps
+        // the thrown exception to the app's friendly network-error message (consistent with every
+        // other repository), so that — not the raw exception text — is what the VM surfaces.
         assertEquals(mapOf("chore_due" to true), successData(vm).preferences)
         val saveState = vm.saveState.value
         assertTrue(saveState is UiState.Error)
-        assertEquals("save failed", (saveState as UiState.Error).message)
+        assertEquals(HttpErrorMessages.NETWORK_ERROR, (saveState as UiState.Error).message)
     }
 }
