@@ -1,9 +1,17 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,24 L74,44 L74,84 L34,84 L34,44 Z" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- roof -->
+    <path android:strokeColor="#1361A7" android:strokeWidth="5.06"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M26.4,54.0 L54.0,26.4 L81.6,54.0"/>
+    <!-- walls (open top) -->
+    <path android:strokeColor="#1361A7" android:strokeWidth="4.05"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M32.84,56.76 L32.84,81.6 L75.16,81.6 L75.16,56.76"/>
+    <!-- white knockout halo (separates check from house on the white background) -->
+    <path android:fillColor="#FFFFFF" android:strokeColor="#FFFFFF" android:strokeWidth="6.44"
+        android:strokeLineJoin="round" android:pathData="M40.11,50.2 L51.24,63.2 Q61.64,43.24 80.68,30.08 Q61.64,48.53 51.24,73.78 L32.93,55.96 Z"/>
+    <!-- grey check -->
+    <path android:fillColor="#818589" android:pathData="M40.11,50.2 L51.24,63.2 Q61.64,43.24 80.68,30.08 Q61.64,48.53 51.24,73.78 L32.93,55.96 Z"/>
 </vector>
