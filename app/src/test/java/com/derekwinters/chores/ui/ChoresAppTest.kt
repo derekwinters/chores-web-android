@@ -57,7 +57,8 @@ class ChoresAppTest {
                 isAuthenticated = isAuthenticated,
                 onLogout = onLogout,
                 loginContent = { Text("Fake Login") },
-                dashboardContent = { Text("Fake Dashboard") },
+                homeContent = { _, _ -> Text("Fake Home") },
+                boardsContent = { Text("Fake Boards") },
                 choresContent = { _, _, _ -> Text("Fake Chores") },
                 choreFormContent = choreFormContent,
                 userDetailContent = { Text("Fake User Detail") },
@@ -124,10 +125,11 @@ class ChoresAppTest {
     }
 
     @Test
-    fun choresApp_signedIn_startsOnDashboard() {
+    fun choresApp_signedIn_startsOnHome() {
+        // Issue #16: the start destination (route "dashboard") is now the user-specific Home.
         setContent()
 
-        composeTestRule.onNodeWithText("Fake Dashboard").assertExists()
+        composeTestRule.onNodeWithText("Fake Home").assertExists()
     }
 
     @Test
@@ -138,7 +140,17 @@ class ChoresAppTest {
         composeTestRule.onNodeWithText("Fake Chores").assertExists()
 
         composeTestRule.onNodeWithTag("navItem_dashboard").performClick()
-        composeTestRule.onNodeWithText("Fake Dashboard").assertExists()
+        composeTestRule.onNodeWithText("Fake Home").assertExists()
+    }
+
+    @Test
+    fun choresApp_bottomNav_boardsTab_showsBoardsContent() {
+        // Issue #16: the all-person Board grid is its own top-level destination again.
+        setContent()
+
+        composeTestRule.onNodeWithTag("navItem_boards").performClick()
+
+        composeTestRule.onNodeWithText("Fake Boards").assertExists()
     }
 
     @Test
@@ -161,34 +173,60 @@ class ChoresAppTest {
 
     @Test
     fun choresApp_bottomNav_admin_showsAllFiveDestinationsWithLabels() {
+        // Issue #16: the five fixed tabs are now Home, Boards, Chores, Log, Settings — Users left
+        // the bottom nav (it moved into Settings) and Boards took its slot.
         setContent(isAdmin = true)
 
         composeTestRule.onNodeWithTag("navItem_dashboard").assertTextEquals("Home")
+        composeTestRule.onNodeWithTag("navItem_boards").assertTextEquals("Boards")
         composeTestRule.onNodeWithTag("navItem_chores").assertTextEquals("Chores")
-        composeTestRule.onNodeWithTag("navItem_users").assertTextEquals("Users")
         composeTestRule.onNodeWithTag("navItem_log").assertTextEquals("Log")
         composeTestRule.onNodeWithTag("navItem_settings").assertTextEquals("Settings")
     }
 
     @Test
-    fun choresApp_bottomNav_nonAdmin_hidesUsersButKeepsSettingsVisible() {
-        // Issue #167: Settings loses its admin-only gate (now reachable by everyone for the
-        // folded-in Preferences entry); Users remains admin-only and hidden entirely -- non-admins
-        // see 3 of 5 tabs (Home, Chores, Log), which is intentional, not a bug.
-        setContent(isAdmin = false)
-
+    fun choresApp_bottomNav_usersIsNotATopLevelTab_forAdminOrNonAdmin() {
+        // Issue #16: Users is no longer a bottom-nav destination for anyone — admins reach it via
+        // the Settings menu instead (see choresApp_users_reachableFromSettingsMenu_forAdmin).
+        setContent(isAdmin = true)
         composeTestRule.onNodeWithTag("navItem_users").assertDoesNotExist()
-        composeTestRule.onNodeWithTag("navItem_settings").assertExists()
-        composeTestRule.onNodeWithTag("navItem_dashboard").assertExists()
-        composeTestRule.onNodeWithTag("navItem_chores").assertExists()
-        composeTestRule.onNodeWithTag("navItem_log").assertExists()
     }
 
     @Test
-    fun choresApp_bottomNav_admin_showsUsersTab() {
+    fun choresApp_bottomNav_nonAdmin_showsAllFiveTabs() {
+        // Issue #16: none of the five surviving tabs are admin-gated at the tab level, so a
+        // non-admin sees the full set (Home, Boards, Chores, Log, Settings).
+        setContent(isAdmin = false)
+
+        composeTestRule.onNodeWithTag("navItem_users").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("navItem_dashboard").assertExists()
+        composeTestRule.onNodeWithTag("navItem_boards").assertExists()
+        composeTestRule.onNodeWithTag("navItem_chores").assertExists()
+        composeTestRule.onNodeWithTag("navItem_log").assertExists()
+        composeTestRule.onNodeWithTag("navItem_settings").assertExists()
+    }
+
+    @Test
+    fun choresApp_users_reachableFromSettingsMenu_forAdmin() {
+        // Issue #16: the admin-only Users row inside the Settings menu navigates to the Users
+        // destination (the real SettingsMenuContent is rendered here, so this covers the
+        // ChoresApp <-> SettingsMenuContent onNavigateToUsers wiring end-to-end).
         setContent(isAdmin = true)
 
-        composeTestRule.onNodeWithTag("navItem_users").assertExists()
+        composeTestRule.onNodeWithTag("navItem_settings").performClick()
+        composeTestRule.onNodeWithText("Users").performClick()
+
+        composeTestRule.onNodeWithText("Fake Users").assertExists()
+    }
+
+    @Test
+    fun choresApp_settingsMenu_nonAdmin_doesNotShowUsersRow() {
+        // Issue #16: Users stays admin-only, so a non-admin never sees the row.
+        setContent(isAdmin = false)
+
+        composeTestRule.onNodeWithTag("navItem_settings").performClick()
+
+        composeTestRule.onNodeWithText("Users").assertDoesNotExist()
     }
 
     @Test
@@ -355,9 +393,11 @@ class ChoresAppTest {
 
     @Test
     fun choresApp_topBar_addChoreAction_hiddenOnOtherTopLevelScreens() {
+        // Issue #16: Users is no longer a tab, so exercise Boards + Settings as the "not Chores"
+        // top-level screens the Add-Chore action must stay hidden on.
         setContent(isAdmin = true)
 
-        composeTestRule.onNodeWithTag("navItem_users").performClick()
+        composeTestRule.onNodeWithTag("navItem_boards").performClick()
         composeTestRule.onNodeWithContentDescription("Add Chore").assertDoesNotExist()
 
         composeTestRule.onNodeWithTag("navItem_settings").performClick()

@@ -68,6 +68,16 @@ fun buildDashboardCards(
     }
 }
 
+/**
+ * Issue #16: Home is logged-in-user specific — it reuses the exact per-person Board card
+ * ([DashboardCard]: trend data + Due Now/Due Soon counts) but shows only the signed-in user's own
+ * card, filtered out of the full Board set by username. A null/blank username (identity not yet
+ * loaded) or a username with no matching person yields an empty list, which Home renders as its
+ * empty state rather than falling back to showing everyone's cards.
+ */
+fun homeCards(cards: List<DashboardCard>, username: String?): List<DashboardCard> =
+    if (username.isNullOrBlank()) emptyList() else cards.filter { it.username == username }
+
 private fun isDueSoon(chore: Chore, dueSoonDays: Int, today: LocalDate): Boolean {
     if (chore.isDue) return false
     val dueDate = chore.nextDue?.let(::parseDateOrNull) ?: return false

@@ -32,6 +32,7 @@ palettes. Goldens are PNGs in `app/src/test/snapshots/`, named
 | Notification Log (`NotificationLogContent`; unread accent bar/fill + read history mix — issue #45) | `notificationlog_mix_*` |
 | Notification Log empty state (issue #45) | `notificationlog_empty_*` |
 | Notification bell unread badge (`BadgedBox` + `Badge` over the bell icon — issue #45) | `notificationbadge_bell_*` |
+| Home (`HomeContent`; the signed-in user's own single Board card — issue #16) | `home_usercard_*` |
 
 `PillBadge`, `ChoreRow`, and `ThemeOptionCard` are private composables; the tests snapshot the
 closest public wrapper (`ChoreListContent`, `ThemePreferenceContent`) or an equivalent inline

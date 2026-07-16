@@ -36,6 +36,9 @@ import com.derekwinters.chores.data.model.toDomain
 import com.derekwinters.chores.data.network.dto.ConfigDto
 import com.derekwinters.chores.ui.UiState
 import com.derekwinters.chores.ui.chores.ChoreListContent
+import com.derekwinters.chores.ui.dashboard.DashboardCard
+import com.derekwinters.chores.ui.dashboard.DashboardNavActions
+import com.derekwinters.chores.ui.dashboard.HomeContent
 import com.derekwinters.chores.ui.notifications.NotificationLogContent
 import com.derekwinters.chores.ui.settings.SettingsAboutContent
 import com.derekwinters.chores.ui.theme.ChoresTheme
@@ -503,5 +506,60 @@ class ComponentSnapshotTest {
     @Test
     fun notificationBadge_bell_paper() {
         captureThemedContent(paperTheme, "notificationbadge_bell_paper.png") { NotificationBellBadgeCatalog() }
+    }
+
+    // --- Home (issue #16: the signed-in user's own single Board card via HomeContent) ------------
+
+    // One card for the signed-in user ("alice") plus another that HomeContent must filter out, so
+    // the golden proves Home shows only the user's own card (trend rows + Due Now/Due Soon).
+    private val aliceCard = DashboardCard(
+        personId = 1,
+        username = "alice",
+        displayName = "Alice",
+        points7d = 10,
+        goal7d = 12,
+        points30d = 40,
+        goal30d = 50,
+        dueNowCount = 2,
+        dueSoonCount = 1
+    )
+    private val bobCard = DashboardCard(
+        personId = 2,
+        username = "bob",
+        displayName = "Bob",
+        points7d = 3,
+        goal7d = 12,
+        points30d = 20,
+        goal30d = 50,
+        dueNowCount = 0,
+        dueSoonCount = 0
+    )
+
+    private fun captureHome(theme: ThemeOption, fileName: String) {
+        composeTestRule.setContent {
+            ChoresTheme(themeOption = theme) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    HomeContent(
+                        username = "alice",
+                        uiState = UiState.Success(listOf(aliceCard, bobCard)),
+                        navActions = DashboardNavActions()
+                    )
+                }
+            }
+        }
+        composeTestRule.onRoot().captureRoboImage(goldenPath(fileName))
+    }
+
+    @Test
+    fun home_userCard_dark() {
+        captureHome(darkTheme, "home_usercard_dark.png")
+    }
+
+    @Test
+    fun home_userCard_paper() {
+        captureHome(paperTheme, "home_usercard_paper.png")
     }
 }

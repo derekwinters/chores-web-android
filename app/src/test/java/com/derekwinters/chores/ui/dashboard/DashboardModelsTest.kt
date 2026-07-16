@@ -44,6 +44,47 @@ class DashboardModelsTest {
         eligiblePeople = emptyList()
     )
 
+    // Issue #16: Home is logged-in-user specific — homeCards() filters the full Board set to the
+    // signed-in user's own card.
+
+    private fun card(username: String) = DashboardCard(
+        personId = username.hashCode(),
+        username = username,
+        displayName = username.replaceFirstChar { it.uppercase() },
+        points7d = 0,
+        goal7d = 0,
+        points30d = 0,
+        goal30d = 0,
+        dueNowCount = 0,
+        dueSoonCount = 0
+    )
+
+    @Test
+    fun homeCards_returnsOnlyTheSignedInUsersCard() {
+        val cards = listOf(card("alice"), card("bob"))
+
+        val home = homeCards(cards, username = "alice")
+
+        assertEquals(1, home.size)
+        assertEquals("alice", home.single().username)
+    }
+
+    @Test
+    fun homeCards_nullOrBlankUsername_returnsEmpty() {
+        val cards = listOf(card("alice"), card("bob"))
+
+        // Identity not yet loaded: don't fall back to showing everyone's cards.
+        assertEquals(emptyList<DashboardCard>(), homeCards(cards, username = null))
+        assertEquals(emptyList<DashboardCard>(), homeCards(cards, username = "  "))
+    }
+
+    @Test
+    fun homeCards_usernameWithNoMatchingPerson_returnsEmpty() {
+        val cards = listOf(card("alice"), card("bob"))
+
+        assertEquals(emptyList<DashboardCard>(), homeCards(cards, username = "carol"))
+    }
+
     @Test
     fun buildDashboardCards_countsDueNowAndDueSoon_includingUnassignedChores() {
         val today = LocalDate.of(2026, 7, 2)

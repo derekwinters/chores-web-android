@@ -35,7 +35,8 @@ class SettingsMenuContentTest {
         onNavigateToData: () -> Unit = {},
         onNavigateToAbout: () -> Unit = {},
         onNavigateToPreferences: () -> Unit = {},
-        onNavigateToNotifications: () -> Unit = {}
+        onNavigateToNotifications: () -> Unit = {},
+        onNavigateToUsers: () -> Unit = {}
     ) {
         composeTestRule.setContent {
             SettingsMenuContent(
@@ -47,7 +48,8 @@ class SettingsMenuContentTest {
                 onNavigateToData = onNavigateToData,
                 onNavigateToAbout = onNavigateToAbout,
                 onNavigateToPreferences = onNavigateToPreferences,
-                onNavigateToNotifications = onNavigateToNotifications
+                onNavigateToNotifications = onNavigateToNotifications,
+                onNavigateToUsers = onNavigateToUsers
             )
         }
     }
@@ -58,6 +60,8 @@ class SettingsMenuContentTest {
 
         composeTestRule.onNodeWithText("Preferences").assertExists()
         composeTestRule.onNodeWithText("Notifications").assertExists()
+        // Issue #16: Users moved into the Settings menu (admin-only).
+        composeTestRule.onNodeWithText("Users").assertExists()
         composeTestRule.onNodeWithText("General").assertExists()
         composeTestRule.onNodeWithText("Auth").assertExists()
         composeTestRule.onNodeWithText("Chores").assertExists()
@@ -75,11 +79,23 @@ class SettingsMenuContentTest {
         composeTestRule.onNodeWithText("Preferences").assertExists()
         composeTestRule.onNodeWithText("Notifications").assertExists()
         composeTestRule.onNodeWithText("About").assertExists()
+        // Issue #16: Users is admin-only.
+        composeTestRule.onNodeWithText("Users").assertDoesNotExist()
         composeTestRule.onNodeWithText("General").assertDoesNotExist()
         composeTestRule.onNodeWithText("Auth").assertDoesNotExist()
         composeTestRule.onNodeWithText("Chores").assertDoesNotExist()
         composeTestRule.onNodeWithText("Theme").assertDoesNotExist()
         composeTestRule.onNodeWithText("Data").assertDoesNotExist()
+    }
+
+    @Test
+    fun settingsMenuContent_usersRowClick_invokesNavigateToUsers() {
+        var navigated = false
+        setContent(isAdmin = true, onNavigateToUsers = { navigated = true })
+
+        composeTestRule.onNodeWithText("Users").performClick()
+
+        assert(navigated)
     }
 
     @Test

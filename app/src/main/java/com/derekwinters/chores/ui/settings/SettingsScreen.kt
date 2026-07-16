@@ -239,6 +239,8 @@ fun SettingsMenuContent(
     onNavigateToAbout: () -> Unit,
     onNavigateToPreferences: () -> Unit,
     onNavigateToNotifications: () -> Unit,
+    /** Issue #16: Users moved out of the bottom nav into this menu (admin-only, like web's `adminOnly` Users page). */
+    onNavigateToUsers: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -253,6 +255,9 @@ fun SettingsMenuContent(
         // preferences), so it sits with Preferences above the admin-only rows.
         SettingsMenuItem(label = "Notifications", onClick = onNavigateToNotifications)
         if (isAdmin) {
+            // Issue #16: Users is admin-only, matching web's `adminOnly: true` Users page and the
+            // top-level gate it carried while it was still a bottom-nav tab.
+            SettingsMenuItem(label = "Users", onClick = onNavigateToUsers)
             SettingsMenuItem(label = "General", onClick = onNavigateToGeneral)
             SettingsMenuItem(label = "Auth", onClick = onNavigateToAuth)
             SettingsMenuItem(label = "Chores", onClick = onNavigateToChores)

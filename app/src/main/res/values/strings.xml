@@ -6,6 +6,10 @@
          nav label is "Home" (route unchanged) — an intentional divergence from web's "Board"
          copy, since a bottom nav bar's home tab conventionally reads "Home". -->
     <string name="nav_dashboard">Home</string>
+    <!-- Issue #16: the all-person Board grid returns as its own top-level destination alongside
+         Home (which is now the signed-in user's own card). Web calls the same screen "Board"
+         (App.jsx PAGES); Android keeps the plural "Boards" nav label. -->
+    <string name="nav_boards">Boards</string>
     <string name="nav_chores">Chores</string>
     <string name="nav_log">Log</string>
     <string name="nav_users">Users</string>
@@ -140,6 +144,9 @@
 
     <!-- Dashboard screen (issue #12) -->
     <string name="dashboard_empty">No people added yet…</string>
+    <!-- Issue #16: Home shows only the signed-in user's own Board card; this is the fallback when
+         that card can't be resolved (identity not yet loaded, or the user has no person record). -->
+    <string name="home_empty">Nothing to show for your account yet…</string>
     <string name="dashboard_7_day_label">Last 7 Days</string>
     <string name="dashboard_30_day_label">Last 30 Days</string>
     <string name="dashboard_points_unit">pts</string>

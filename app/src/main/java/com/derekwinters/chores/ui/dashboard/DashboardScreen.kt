@@ -60,7 +60,13 @@ fun DashboardScreen(
 fun DashboardContent(
     uiState: UiState<List<DashboardCard>>,
     navActions: DashboardNavActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /**
+     * Issue #16: the empty-state text. Defaults to the all-person Board copy; Home (which renders
+     * the same content filtered to the signed-in user's single card) overrides it with its own
+     * copy so an unresolved card doesn't read as "no people added yet".
+     */
+    emptyText: String = stringResource(R.string.dashboard_empty)
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         when (uiState) {
@@ -74,7 +80,7 @@ fun DashboardContent(
                 if (uiState.data.isEmpty()) {
                     Text(
                         modifier = Modifier.align(Alignment.Center),
-                        text = stringResource(R.string.dashboard_empty)
+                        text = emptyText
                     )
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {

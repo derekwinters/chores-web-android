@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
@@ -85,6 +86,7 @@ import com.derekwinters.chores.ui.chores.ChoresNavActions
 import com.derekwinters.chores.ui.common.DbReadinessGate
 import com.derekwinters.chores.ui.dashboard.DashboardNavActions
 import com.derekwinters.chores.ui.dashboard.DashboardScreen
+import com.derekwinters.chores.ui.dashboard.HomeScreen
 import com.derekwinters.chores.ui.log.ActivityLogScreen
 import com.derekwinters.chores.ui.notifications.NotificationLogScreen
 import com.derekwinters.chores.ui.settings.AuthLogScreen
@@ -167,9 +169,30 @@ sealed class ChoresDestination(
     val icon: ImageVector,
     val adminOnly: Boolean = false
 ) {
+    /**
+     * Issue #16: [Dashboard] (route unchanged, still the app's start destination and still
+     * labelled "Home") is now the signed-in user's **own** Board card only — the full per-person
+     * grid moves to [Boards] below. The route id stays "dashboard" so existing deep-link targets
+     * and the `navItem_dashboard` test tag are unaffected.
+     */
     data object Dashboard : ChoresDestination("dashboard", R.string.nav_dashboard, Icons.Filled.Home)
+
+    /**
+     * Issue #16: the all-person Board grid restored as its own top-level destination (it was
+     * previously folded into the "Home" tab). Mirrors web's `PAGES` "Board" entry; the Android nav
+     * label is "Boards" and it renders the unchanged all-person [DashboardScreen].
+     */
+    data object Boards : ChoresDestination("boards", R.string.nav_boards, Icons.Filled.Dashboard)
     data object Chores : ChoresDestination("chores", R.string.nav_chores, Icons.Filled.CheckCircle)
     data object ActivityLog : ChoresDestination("log", R.string.nav_log, Icons.Filled.History)
+
+    /**
+     * Issue #16: [Users] is no longer a top-level bottom-nav destination — it moves inside Settings
+     * (an admin-only `SettingsMenuContent` row navigates to this route). It stays registered as a
+     * NavHost destination (and keeps `adminOnly`, still consulted for its "Manage Users" top-bar
+     * title branch) but is deliberately absent from [bottomNavDestinations], the same "destination
+     * but not a bottom tab" treatment as [Notifications]/[Preferences].
+     */
     data object Users : ChoresDestination("users", R.string.nav_users, Icons.Filled.People, adminOnly = true)
     data object Settings : ChoresDestination("settings", R.string.nav_settings, Icons.Filled.Settings)
     data object Preferences : ChoresDestination("settings/preferences", R.string.nav_preferences, Icons.Filled.Palette)
@@ -225,14 +248,16 @@ private fun userDetailRoute(personId: Int, username: String): String =
     "users/$personId?username=${android.net.Uri.encode(username)}"
 
 /**
- * Issue #167 (ADR-0004): the five fixed bottom-nav items, in web's `PAGES`-derived order (Board/
- * Home → Chores → Users(admin) → Log) plus Settings, which — unlike issues #59/#60's
- * avatar-dropdown-only placement — is now a primary tab too (see [ChoresDestination] doc).
+ * Issue #16: the five fixed bottom-nav items are now Home → Boards → Chores → Log → Settings.
+ * [Users] leaves the bottom nav (it moves into Settings — see [ChoresDestination.Users]) and the
+ * all-person Board grid returns as its own [Boards] tab, so the count stays a fixed five and none
+ * of the surviving tabs are admin-gated at the tab level (Settings dropped its gate in issue #167;
+ * admin-only content is gated per-row inside `SettingsMenuContent`).
  */
 private val bottomNavDestinations = listOf(
     ChoresDestination.Dashboard,
+    ChoresDestination.Boards,
     ChoresDestination.Chores,
-    ChoresDestination.Users,
     ChoresDestination.ActivityLog,
     ChoresDestination.Settings
 )
@@ -295,7 +320,16 @@ fun ChoresAppContent(
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     loginContent: @Composable () -> Unit = { AuthGateScreen() },
-    dashboardContent: @Composable (DashboardNavActions) -> Unit = { navActions ->
+    /**
+     * Issue #16: the Home destination — the signed-in user's own Board card. Takes the signed-in
+     * username (combined with the shared Dashboard data at this call site, the NavBadge decoupling
+     * pattern); defaults to the real (Hilt-wired) [HomeScreen], overridable in tests.
+     */
+    homeContent: @Composable (username: String?, navActions: DashboardNavActions) -> Unit = { username, navActions ->
+        HomeScreen(username = username, navActions = navActions)
+    },
+    /** Issue #16: the Boards destination — the full all-person Board grid ([DashboardScreen]). */
+    boardsContent: @Composable (DashboardNavActions) -> Unit = { navActions ->
         DashboardScreen(navActions = navActions)
     },
     choresContent: @Composable (assignee: String?, dueWithin: String?, navActions: ChoresNavActions) -> Unit = { assignee, dueWithin, navActions ->
@@ -395,7 +429,8 @@ fun ChoresAppContent(
                 appTitle = appTitle,
                 dueNowCount = dueNowCount,
                 notificationUnreadCount = notificationUnreadCount,
-                dashboardContent = dashboardContent,
+                homeContent = homeContent,
+                boardsContent = boardsContent,
                 choresContent = choresContent,
                 choreFormContent = choreFormContent,
                 userDetailContent = userDetailContent,
@@ -432,7 +467,8 @@ private fun ChoresAuthenticatedScaffold(
     /** Issue #45: unread-notification count for the top-bar bell badge (0 hides the badge). */
     notificationUnreadCount: Int,
     modifier: Modifier = Modifier,
-    dashboardContent: @Composable (DashboardNavActions) -> Unit,
+    homeContent: @Composable (username: String?, navActions: DashboardNavActions) -> Unit,
+    boardsContent: @Composable (DashboardNavActions) -> Unit,
     choresContent: @Composable (assignee: String?, dueWithin: String?, navActions: ChoresNavActions) -> Unit,
     choreFormContent: @Composable (onDone: () -> Unit) -> Unit,
     userDetailContent: @Composable (onNavigateToHistory: () -> Unit) -> Unit,
@@ -660,17 +696,22 @@ private fun ChoresAuthenticatedScaffold(
             popEnterTransition = fadeThroughEnter,
             popExitTransition = fadeThroughExit
         ) {
+            // Issue #16: Home and Boards share the same card deep-link actions (Due Now/Due Soon
+            // into Chores, card tap into User Detail) — Home just renders the signed-in user's own
+            // card, Boards the full grid.
+            val dashboardNavActions = DashboardNavActions(
+                onNavigateToChores = { assignee, dueWithin ->
+                    navController.navigate(choresRouteWithArgs(assignee, dueWithin))
+                },
+                onNavigateToUserDetail = { personId, username ->
+                    navController.navigate(userDetailRoute(personId, username))
+                }
+            )
             composable(ChoresDestination.Dashboard.route) {
-                dashboardContent(
-                    DashboardNavActions(
-                        onNavigateToChores = { assignee, dueWithin ->
-                            navController.navigate(choresRouteWithArgs(assignee, dueWithin))
-                        },
-                        onNavigateToUserDetail = { personId, username ->
-                            navController.navigate(userDetailRoute(personId, username))
-                        }
-                    )
-                )
+                homeContent(username, dashboardNavActions)
+            }
+            composable(ChoresDestination.Boards.route) {
+                boardsContent(dashboardNavActions)
             }
             composable(
                 route = choresListRoute,
@@ -774,7 +815,11 @@ private fun ChoresAuthenticatedScaffold(
                         onNavigateToData = { navController.navigate("settings/data") },
                         onNavigateToAbout = { navController.navigate("settings/about") },
                         onNavigateToPreferences = { navController.navigate(ChoresDestination.Preferences.route) },
-                        onNavigateToNotifications = { navController.navigate("settings/notifications") }
+                        onNavigateToNotifications = { navController.navigate("settings/notifications") },
+                        // Issue #16: Users left the bottom nav and is reachable here instead. It
+                        // navigates to the top-level "users" NavHost destination (registered
+                        // outside this settings graph), so back returns to the Settings menu.
+                        onNavigateToUsers = { navController.navigate(ChoresDestination.Users.route) }
                     )
                 }
                 composable(
