@@ -1,6 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "9.2.1" apply false
+    id("com.android.application") version "9.3.0" apply false
     // AGP 9.0+ bundles Kotlin support; the standalone org.jetbrains.kotlin.android plugin is no
     // longer applied anywhere in this project (see app/build.gradle.kts) and is intentionally
     // not declared here. https://developer.android.com/build/migrate-to-built-in-kotlin.
@@ -9,7 +9,7 @@ plugins {
     // (still used for Hilt's annotation processing), per the official migration guide's
     // supported path for projects not yet moving to KSP. Pinned to the AGP version (kept in
     // lockstep with com.android.application above), not the Kotlin version.
-    id("com.android.legacy-kapt") version "9.2.1" apply false
+    id("com.android.legacy-kapt") version "9.3.0" apply false
     // Kotlin 2.0+ decoupled the Compose compiler from the core Kotlin plugin; version must match
     // the Kotlin version above (2.4.0). Replaces the pre-2.0 composeOptions.
     // kotlinCompilerExtensionVersion pin that used to live in app/build.gradle.kts.
