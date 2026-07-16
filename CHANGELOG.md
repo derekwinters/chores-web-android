@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/derekwinters/chores-web-android/compare/v1.2.0...v1.3.0) (2026-07-16)
+
+
+### Features
+
+* add new launcher icon ([#59](https://github.com/derekwinters/chores-web-android/issues/59)) ([1cd6f0b](https://github.com/derekwinters/chores-web-android/commit/1cd6f0b7f1151c3d6abfeb7e440f50716b24e4ae))
+
 ## [1.2.0](https://github.com/derekwinters/chores-web-android/compare/v1.1.1...v1.2.0) (2026-07-14)
 
 
