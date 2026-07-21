@@ -1,11 +1,12 @@
 ---
 name: implementation-verify
-description: Verify Android debug build compiles and show changes summary for user review
+description: Build/verify the change and show a changes summary for user review, then pause.
 ---
 
 # Implementation Verify Skill
 
-Runs a debug build to verify the app compiles, then shows a summary of changes for user review.
+Runs the repo's verification, then shows a summary of changes for user review.
+This is the human control point before commit.
 
 ## Usage
 
@@ -15,34 +16,18 @@ Runs a debug build to verify the app compiles, then shows a summary of changes f
 
 ## Workflow
 
-1. **Build**: `./gradlew assembleDebug`
-2. **Verify build succeeded**: Check exit code, report any compile errors
-3. **Prepare changes summary**:
-   - List all files modified
-   - Show line change counts
-   - Summarize implementation
-   - Display test results
-4. **Pause workflow**: Wait for user approval or request for changes
+1. **Verify:** `./gradlew assembleDebug` — must succeed. It must NEVER
+   silently pass; report the real result.
+
+2. **Prepare a changes summary:** `git diff --stat`; list files modified with
+   line counts; summarize the implementation; include the test/verify results.
+3. **Pause:** wait for the user to Approve for commit / Request changes / Abort.
 
 ## Parameters
 
-- `issue_number` (optional): For reference in output
-
-## Output
-
-Shows:
-- Files modified with line counts
-- Implementation summary
-- Test results
-- Build status
-- Ready for user to:
-  - Approve for commit
-  - Request more changes
-  - Abort
+- `issue_number` (optional): for reference in the output.
 
 ## Notes
 
-- Called by orchestrator after tests pass
-- Build verification confirms no compile errors introduced
-- Shows all changes before user reviews
-- User has control point here
+- Called by the orchestrator after tests pass.
+- Shows all changes before the user reviews; the user has the control point here.

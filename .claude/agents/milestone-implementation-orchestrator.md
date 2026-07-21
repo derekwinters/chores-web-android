@@ -11,7 +11,7 @@ Implements all issues in a GitHub milestone sequentially on a shared branch, cul
 ## Invocation
 
 ```
-@milestone-implementation-orchestrator https://github.com/derekwinters/chores-web-android-client/milestone/N
+@milestone-implementation-orchestrator https://github.com/derekwinters/chores-web-backend/milestone/N
 ```
 
 ## IMPORTANT: Display Workflow Diagram on Every State Transition
@@ -242,7 +242,7 @@ CI is gated **inside the per-issue loop** (state [6]), not only at the end — a
   ```
   RECHECK: <branch> <pr_number> in ~N minutes
   ```
-  Default recheck delay: ~10 minutes (typical CI duration for this repo's Gradle build) — a default, not a hard rule. The parent session owns the timer and re-prompts this orchestrator (or resumes it) when it fires; on wake, this orchestrator reads the PR check results for the current head (a lightweight single status read, not a 40-poll loop).
+  Default recheck delay: ~10 minutes (typical CI duration for this repo's pytest + contract-check run) — a default, not a hard rule. The parent session owns the timer and re-prompts this orchestrator (or resumes it) when it fires; on wake, this orchestrator reads the PR check results for the current head (a lightweight single status read, not a 40-poll loop).
 - **On failure**: do not fix inline and do not by default re-task the busy implementation agent. Spawn a dedicated **resolution agent** (fresh context) with: failing check names, log excerpts, branch name, and the same "what may be fixed autonomously vs HALT" constraint set used in the final CI Watch below. The resolution agent commits `fix:` commits to the same branch, then this orchestrator arms another recheck.
 - **Budget**: max 3 fix attempts per issue (shared with the final ci-watch fix loop below). On attempt 3 failure: HALT with the standard report; do not attempt a 4th fix.
 - State [8] `ci-watch` remains as a final safety net over the whole PR — it should be trivially green given per-issue gating already occurred.
@@ -278,8 +278,8 @@ On attempt 3 failure: HALT with the full CI_WATCH_RESULT. Do not attempt a 4th f
 - Missing env vars in CI workflow steps
 - Wrong tool install commands (binary names, asset URLs, paths)
 - Test failures caused by code introduced in this milestone
-- Gradle build failures due to missing dependency declarations
-- API base URL or endpoint mismatches in Retrofit interfaces
+- Missing dependency declarations (e.g. an import with no matching package)
+- API contract drift where the golden snapshot in chores-web-docs needs regenerating for a non-breaking change
 
 ### What requires HALT (do not attempt to fix autonomously)
 

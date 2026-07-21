@@ -1,11 +1,12 @@
 ---
 name: commit
-description: Run tests and create conventional commit with proper type and scope
+description: Run the repo's tests, then create a Conventional Commit with proper type and scope.
 ---
 
 # Commit Skill
 
-Validates all tests pass, then creates a Conventional Commit with proper type/scope.
+Validates the suite passes, then creates a Conventional Commit with the right
+type/scope. Stage changes before invoking.
 
 ## Usage
 
@@ -15,13 +16,13 @@ Validates all tests pass, then creates a Conventional Commit with proper type/sc
 
 ## Flow
 
-1. Run unit test suite (`./gradlew test`)
-2. Stop if any tests fail — report failures
-3. Review staged/unstaged changes
-4. Derive commit type and scope from changes
-5. Create commit using Conventional Commits format
+1. Run the test suite: `./gradlew test`
+2. Stop if anything fails — report failures; do NOT commit.
+3. Review staged/unstaged changes (`git diff --staged`, `git status`).
+4. Derive commit type and scope from the actual changes.
+5. Create the commit in Conventional Commits format.
 
-## Commit Format
+## Format
 
 ```
 <type>(<scope>): <short description>
@@ -31,29 +32,18 @@ Validates all tests pass, then creates a Conventional Commit with proper type/sc
 
 ## Types
 
-- `feat` - new feature
-- `fix` - bug fix
-- `refactor` - code restructuring
-- `test` - test additions/changes
-- `docs` - documentation
-- `chore` - build/deps/tooling
-- `style` - formatting
-- `perf` - performance
-- `ci` - CI/CD changes
+`feat` (feature) · `fix` (bug) · `refactor` · `test` · `docs` · `chore`
+(build/deps/tooling) · `style` · `perf` · `ci`. Pick by the actual semver impact
+of the change, not by what a PR title happens to say.
 
 ## Scopes
 
-- `ui` - Compose screens, components, navigation
-- `data` - repositories, data sources, models
-- `network` - API client, Retrofit, OkHttp
-- `domain` - use cases, business logic
-- `auth` - authentication, token handling
-- `build` - Gradle config, dependencies
-- Use most relevant scope
+Use the most relevant of: `ui, data, network, domain, auth, build`.
+
+
 
 ## Rules
 
-- Subject line ≤72 characters, lowercase, no period
-- Imperative mood: "add" not "added"
-- Body only when "why" is non-obvious
-- Stage changes before invoking
+- Subject ≤72 chars, lowercase, no trailing period, imperative mood ("add" not "added").
+- Body only when the "why" is non-obvious.
+- This skill never invents a branch or pushes — it only commits.
