@@ -53,6 +53,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Duration
+import java.time.Instant
 
 /**
  * Issue #15 (design-token rollout iteration 5, derekwinters/chores-web-docs#11): Roborazzi
@@ -419,8 +421,16 @@ class ComponentSnapshotTest {
 
     // --- Notification Log (issue #45: unread accent bar/fill + read history, empty state) --------
 
+    // Frozen reference instant these snapshots measure "N ago" against (issue #70). The relative
+    // timestamps used to be computed from the real wall clock, so the "Nd ago" strings drifted over
+    // calendar time and broke verify. Freezing `now` here and deriving each fixture's `createdAt`
+    // from it keeps the rendered text ("2d ago" / "3d ago") stable, so the committed goldens stay
+    // valid without re-recording.
+    private val fixedNow: Instant = Instant.parse("2026-07-16T08:00:00Z")
+
     // One unread notification (accent bar + translucent fill + unread dot + "Mark as read") and one
-    // acknowledged/read one (plain), covering both row styles the NotificationTokens drive.
+    // acknowledged/read one (plain), covering both row styles the NotificationTokens drive. Created
+    // 2 and 3 days before [fixedNow] so they render "2d ago" / "3d ago" deterministically.
     private val unreadNotification = Notification(
         id = 1,
         personId = 7,
@@ -428,8 +438,8 @@ class ComponentSnapshotTest {
         choreId = 42,
         title = "Dishes are due",
         body = "Please do the dishes.",
-        createdAt = "2026-07-14T08:00:00Z",
-        deliveredAt = "2026-07-14T08:00:00Z",
+        createdAt = fixedNow.minus(Duration.ofDays(2)).toString(),
+        deliveredAt = fixedNow.minus(Duration.ofDays(2)).toString(),
         acknowledgedAt = null,
         dismissedAt = null
     )
@@ -440,9 +450,9 @@ class ComponentSnapshotTest {
         choreId = 43,
         title = "Trash was due",
         body = "Take out the trash.",
-        createdAt = "2026-07-13T08:00:00Z",
-        deliveredAt = "2026-07-13T08:00:00Z",
-        acknowledgedAt = "2026-07-13T09:00:00Z",
+        createdAt = fixedNow.minus(Duration.ofDays(3)).toString(),
+        deliveredAt = fixedNow.minus(Duration.ofDays(3)).toString(),
+        acknowledgedAt = fixedNow.minus(Duration.ofDays(3)).plus(Duration.ofHours(1)).toString(),
         dismissedAt = null
     )
 
@@ -455,7 +465,8 @@ class ComponentSnapshotTest {
                 ) {
                     NotificationLogContent(
                         uiState = UiState.Success(notifications),
-                        onAcknowledge = {}
+                        onAcknowledge = {},
+                        now = fixedNow
                     )
                 }
             }
