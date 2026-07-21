@@ -26,15 +26,13 @@ If a question can be answered by exploring the codebase, explore the codebase in
 
 ## Area Checklist
 
-Every grilling session MUST explicitly cover all five areas. Work through them as part of the conversation, not just in the output:
+Every grilling session MUST explicitly cover all of this repo's impact areas. Work through each one as part of the conversation, not just in the output:
 
-- [ ] **Android** — Kotlin/Compose code, ViewModels, repositories, data layer structure
-- [ ] **Network** — API endpoint usage changes, Retrofit interfaces, auth headers, error handling
-- [ ] **UI** — Compose screens, navigation graph, UX flows, state hoisting
-- [ ] **Dependencies** — new Gradle libs, build config changes, and whether each is reflected in CI (install steps, env vars, secrets)
-- [ ] **Docs** — README, architecture docs, CONTEXT.md, ADRs, any other affected docs
+**Impact areas:** ui, data, network, domain, auth, build
 
-If an area has no changes, state that explicitly ("Dependencies: no changes needed") so it's clear it was considered, not skipped.
+Treat each listed area as a checklist item, and consult this repo's `CLAUDE.md` for what that area entails and any rituals it carries (migrations, API-contract drift, versioning, etc.). Always include a **docs** review — README, architecture docs, `CONTEXT.md`, ADRs, and any other affected docs — even if it is not listed above.
+
+If an area has no changes, state that explicitly (e.g. "scheduler: no changes needed") so it's clear it was considered, not skipped.
 
 </what-to-do>
 
@@ -125,15 +123,11 @@ After the session is complete and the user confirms the decisions are captured, 
 ### Impact Areas
 | Area | Changes | Notes |
 |------|---------|-------|
-| Android | ... | ... |
-| Network | ... | ... |
-| UI | ... | ... |
-| Dependencies | ... | ... |
-| Docs | ... | ... |
+| <one row per impact area for this repo: ui, data, network, domain, auth, build, plus Docs> | ... | ... |
 
 ### Behaviors to Implement
-- [ ] Behavior 1 (area: android)
-- [ ] Behavior 2 (area: ui)
+- [ ] Behavior 1 (area: Backend)
+- [ ] Behavior 2 (area: API Contract)
 
 ### CONTEXT.md Updates
 - New terms added: ...
