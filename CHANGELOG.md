@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/derekwinters/chores-web-android/compare/v1.3.0...v1.4.0) (2026-07-21)
+
+
+### Features
+
+* **ai:** adopt shared ai-skills bundles ([#69](https://github.com/derekwinters/chores-web-android/issues/69)) ([fbb474d](https://github.com/derekwinters/chores-web-android/commit/fbb474ddd690f97e5b7d0b8cf522c195ceb96bb1))
+
+
+### Bug Fixes
+
+* **ui:** freeze clock in notification snapshot tests ([#71](https://github.com/derekwinters/chores-web-android/issues/71)) ([e185dba](https://github.com/derekwinters/chores-web-android/commit/e185dbaef02a2e1b19c409e79a70e2978236e367)), closes [#70](https://github.com/derekwinters/chores-web-android/issues/70) [#70](https://github.com/derekwinters/chores-web-android/issues/70)
+
 ## [1.3.0](https://github.com/derekwinters/chores-web-android/compare/v1.2.0...v1.3.0) (2026-07-16)
 
 
