@@ -40,6 +40,7 @@ import com.derekwinters.chores.ui.theme.Space
 import com.derekwinters.chores.ui.theme.notificationBadgeShape
 import com.derekwinters.chores.ui.theme.notificationLogRowShape
 import com.derekwinters.chores.ui.theme.parseHexColor
+import java.time.Instant
 
 /**
  * Issue #45: the in-app Notification Log — a list of the signed-in user's notifications
@@ -68,7 +69,8 @@ fun NotificationLogScreen(
 fun NotificationLogContent(
     uiState: UiState<List<Notification>>,
     onAcknowledge: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    now: Instant = Instant.now()
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         when (uiState) {
@@ -89,7 +91,7 @@ fun NotificationLogContent(
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(notifications, key = { it.id }) { notification ->
-                            NotificationRow(notification = notification, onAcknowledge = onAcknowledge)
+                            NotificationRow(notification = notification, onAcknowledge = onAcknowledge, now = now)
                         }
                     }
                 }
@@ -108,7 +110,8 @@ fun NotificationLogContent(
 @Composable
 private fun NotificationRow(
     notification: Notification,
-    onAcknowledge: (Int) -> Unit
+    onAcknowledge: (Int) -> Unit,
+    now: Instant = Instant.now()
 ) {
     val unread = notification.isUnread
     val accent = unreadAccentColor()
@@ -172,7 +175,7 @@ private fun NotificationRow(
                 )
                 Text(
                     modifier = Modifier.padding(top = Space.xs).testTag("notificationTimestamp"),
-                    text = formatRelativeTimestamp(notification.createdAt),
+                    text = formatRelativeTimestamp(notification.createdAt, now),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

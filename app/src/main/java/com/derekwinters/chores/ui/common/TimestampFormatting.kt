@@ -38,11 +38,16 @@ fun formatDateTime(iso: String): String {
  * exactly (just now / Nm ago / Nh ago / Nd ago). Used by issue #45's Notification Log rows; the
  * same wording the Activity Log row already renders inline. Falls back to the raw string unchanged
  * if it can't be parsed, same defensive stance as [formatDateTime]/[formatDate].
+ *
+ * [now] is the reference instant the elapsed time is measured against; it defaults to the real
+ * wall clock ([Instant.now]) in production. Callers (tests, Compose previews, Roborazzi snapshots)
+ * pass a fixed instant so the rendered "N ago" string is deterministic and does not drift over
+ * calendar time (issue #70).
  */
-fun formatRelativeTimestamp(iso: String): String {
+fun formatRelativeTimestamp(iso: String, now: Instant = Instant.now()): String {
     return try {
         val instant = Instant.parse(iso)
-        val duration = Duration.between(instant, Instant.now())
+        val duration = Duration.between(instant, now)
         val minutes = duration.toMinutes()
         val hours = duration.toHours()
         val days = duration.toDays()

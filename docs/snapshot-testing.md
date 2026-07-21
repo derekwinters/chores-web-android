@@ -33,6 +33,16 @@ palettes. Goldens are PNGs in `app/src/test/snapshots/`, named
 | Notification Log empty state (issue #45) | `notificationlog_empty_*` |
 | Notification bell unread badge (`BadgedBox` + `Badge` over the bell icon — issue #45) | `notificationbadge_bell_*` |
 
+### Deterministic clocks
+
+Snapshots must never depend on the wall clock. The Notification Log rows render a relative
+"N ago" timestamp via `formatRelativeTimestamp`, which measures elapsed time against a reference
+`now` that defaults to `Instant.now()` in production. The snapshot test injects a **fixed** `now`
+(`NotificationLogContent(..., now = fixedNow)`) and derives each fixture's `createdAt` from it, so
+the rendered strings ("2d ago" / "3d ago") stay constant instead of drifting over calendar time
+and breaking verify (issue #70). Any new snapshot whose content is time-relative must pin its clock
+the same way rather than re-recording goldens on a schedule.
+
 `PillBadge`, `ChoreRow`, and `ThemeOptionCard` are private composables; the tests snapshot the
 closest public wrapper (`ChoreListContent`, `ThemePreferenceContent`) or an equivalent inline
 reconstruction built from the same tokens (`PillBadge`) rather than widening production
