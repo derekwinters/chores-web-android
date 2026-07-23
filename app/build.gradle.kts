@@ -157,7 +157,7 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.19.0")
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.06.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -173,14 +173,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
 
     // DI (issue #5, docs/adr/0002-network-auth-architecture.md: Hilt introduced now).
-    implementation("com.google.dagger:hilt-android:2.60")
-    kapt("com.google.dagger:hilt-android-compiler:2.60")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("com.google.dagger:hilt-android:2.60.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.60.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.4.0")
     // Hilt/Dagger-generated Java imports com.google.errorprone.annotations.CanIgnoreReturnValue
     // (class-retention only, not needed at runtime). It used to arrive transitively via
     // androidx.hilt:hilt-work; issue #43 dropped hilt-work (see ADR 0007), so declare it
     // explicitly here to keep the generated code on the compile classpath.
-    compileOnly("com.google.errorprone:error_prone_annotations:2.36.0")
+    compileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
 
     // Background notification polling (issue #43, docs/adr/0007-notification-polling-via-workmanager.md):
     // WorkManager runs the periodic NotificationPollWorker. The worker is a plain CoroutineWorker
@@ -203,12 +203,12 @@ dependencies {
     // Issue #15: Roborazzi snapshot testing on the Robolectric NATIVE-graphics stack (see
     // ComponentSnapshotTest and docs/snapshot-testing.md). Versions match the plugin pin in the
     // root build.gradle.kts.
-    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.64.0")
-    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.64.0")
-    testImplementation("io.github.takahirom.roborazzi:roborazzi-junit-rule:1.64.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.67.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.67.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-junit-rule:1.67.0")
     testImplementation("androidx.test:core:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
-    testImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    testImplementation(platform("androidx.compose:compose-bom:2026.06.01"))
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.4.0")
@@ -218,7 +218,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.06.01"))
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
