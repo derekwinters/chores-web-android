@@ -35,6 +35,12 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        # Explicit packages: the action's default list includes the obsolete 'tools' package,
+        # which fails on current runners ("Failed to find package 'tools'"). The platform
+        # matches compileSdk in app/build.gradle.kts (from API 37 the id carries a minor
+        # version); build-tools also provides apksigner for the release-signature gate.
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
