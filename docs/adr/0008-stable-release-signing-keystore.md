@@ -50,10 +50,12 @@ mirrors `derekwinters/Interval-trainer-android` (same stack) and `derekwinters/l
   `if: always()` step), builds the signed APK, and runs the **release-signature gate** before
   anything is uploaded or attached.
 - **The gate** is `.github/scripts/verify_release_signature.py`. It runs
-  `apksigner verify --print-certs` over each APK, requires exactly one signer whose certificate
-  SHA-256 equals `ANDROID_KEYSTORE_SHA256` (compared case- and colon-insensitively, so the
-  `keytool` and `apksigner` forms are both accepted), and names a debug-key fallback
-  (`CN=Android Debug`) explicitly. The workflows run the copy of the gate checked out from `main`,
+  `apksigner verify --print-certs` (no `--verbose`) over each APK, requires exactly one signing
+  certificate and requires its SHA-256 to equal `ANDROID_KEYSTORE_SHA256` (compared case- and
+  colon-insensitively, so the `keytool` and `apksigner` forms are both accepted), and names a
+  debug-key fallback (`CN=Android Debug`) explicitly. It fails closed on output it cannot read: any
+  unrecognized line, or a signer block without its DN or digest, fails the release. Its unit
+  tests use apksigner output captured with exactly those flags. The workflows run the copy of the gate checked out from `main`,
   so backfilling an old tag still runs the current gate. The gate prints each APK's actual digest;
   that value is public (it ships inside every APK) and could later be committed as a pin.
 - **The release key is never reachable from a pull request.** No `pull_request`-triggered
