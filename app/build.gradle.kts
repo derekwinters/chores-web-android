@@ -24,6 +24,23 @@ plugins {
     id("io.github.takahirom.roborazzi")
 }
 
+// Issue #52, docs/adr/0008-stable-release-signing-keystore.md: the release signing config is read
+// from environment variables only, never from a committed file or a Gradle property. The release
+// workflows decode the ANDROID_KEYSTORE_BASE64 secret into $RUNNER_TEMP and point
+// ANDROID_KEYSTORE_PATH at it; the other three are the remaining secrets by name. When any of the
+// four is missing (a local build, or a mis-wired workflow) no `release` signing config is created
+// and the release build type is left UNSIGNED, never falling back to the debug key: an unsigned
+// APK fails visibly, while a debug-signed one looks fine until the next update fails on a device
+// with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+val releaseKeystorePath: String? = System.getenv("ANDROID_KEYSTORE_PATH")
+val releaseKeystorePassword: String? = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? = System.getenv("ANDROID_KEY_ALIAS")
+val releaseKeyAliasPassword: String? = System.getenv("ANDROID_KEY_ALIAS_PASSWORD")
+val hasReleaseSigningConfig = !releaseKeystorePath.isNullOrBlank() &&
+    !releaseKeystorePassword.isNullOrBlank() &&
+    !releaseKeyAlias.isNullOrBlank() &&
+    !releaseKeyAliasPassword.isNullOrBlank()
+
 android {
     namespace = "com.derekwinters.chores"
     // Several of this bump's transitive AndroidX dependencies (androidx.core:core-ktx:1.19.0,
@@ -49,6 +66,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyAliasPassword
+                // Every signature scheme stated rather than defaulted (ADR-0008). AGP would drop
+                // v1 because minSdk >= 24, which is correct for Android itself, but this APK is
+                // sideloaded through installers AGP knows nothing about, and a scheme set nobody
+                // states is one a toolchain upgrade can change without anyone noticing.
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -56,10 +91,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Debug-signed until Play Store launch is planned — see
-            // docs/adr/0001-debug-signing-until-play-store-launch.md. This lets CI produce
-            // installable release-candidate and tagged-release APKs without a real keystore.
-            signingConfig = signingConfigs.getByName("debug")
+            // Signed with the stable release keystore when the environment provides it (see the
+            // top of this file); otherwise deliberately unsigned. Never the debug key: ADR-0008
+            // supersedes docs/adr/0001-debug-signing-until-play-store-launch.md.
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

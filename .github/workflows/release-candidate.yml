@@ -1,20 +1,81 @@
+# Builds a release-signed APK from Release Please's PR branch so it can be installed and checked
+# before the merge that tags it. Uploads it as a workflow artifact only; nothing is attached to a
+# release.
+#
+# Issue #52 (ADR-0008): this used to trigger on `pull_request`. It now signs with the release
+# keystore, and no pull_request-triggered workflow may ever reference those secrets (a wiring test
+# in .github/scripts/tests enforces it). Instead it runs:
+#   - on `workflow_run`, after "PR Checks" (pr.yml's `name:`, which is what `workflows:` matches)
+#     completes successfully for a `release-please--*` branch of THIS repository. A workflow_run
+#     job runs in this repository's own trust context, GitHub's documented safe pattern for
+#     needing secrets in a job timed by pull-request activity. The same-repository check matters:
+#     a fork can name its branch `release-please--anything`.
+#   - on `workflow_dispatch`, which only someone with write access can start.
+# GitHub reads both triggers from the default branch's copy of this file, so the first run is
+# possible only after this change is on main.
 name: Release Candidate
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_run:
+    workflows: ["PR Checks"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to build a signed release candidate from (empty: the dispatched ref)"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   build-release-candidate:
-    # Only run for the PR that Release Please itself opens/updates, not regular feature PRs.
-    if: startsWith(github.head_ref, 'release-please--')
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'release-please--'))
     runs-on: ubuntu-latest
     steps:
+      # Issue #52 (ADR-0008): fail loudly, before anything is built, if any release signing
+      # secret is missing. Without them Gradle would produce an unsigned APK at best.
+      - name: Check the release signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_SHA256: ${{ secrets.ANDROID_KEYSTORE_SHA256 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEYSTORE_SHA256 \
+                      ANDROID_KEY_ALIAS ANDROID_KEY_ALIAS_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Release signing::Repository secret $name is missing or empty."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Refusing to build a release without the stable release keystore (ADR-0008)."
+            exit 1
+          fi
+
+      # workflow_run does not check out the triggering commit by itself; build exactly the commit
+      # PR Checks validated. On a dispatch, the requested ref (empty falls back to the dispatched
+      # ref).
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.event.workflow_run.head_sha }}
+
+      # The release-signature gate is run from a separate checkout of main, so building an
+      # older ref (e.g. backfilling an old tag) still runs the current gate.
+      - name: Check out main for the release-signature gate
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: main
+          path: verification-gate
 
       - name: Set up JDK 17
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
@@ -24,6 +85,12 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        # Explicit packages: the action's default list includes the obsolete 'tools' package,
+        # which fails on current runners ("Failed to find package 'tools'"). The platform
+        # matches compileSdk in app/build.gradle.kts (from API 37 the id carries a minor
+        # version); build-tools also provides apksigner for the release-signature gate.
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
@@ -33,13 +100,44 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build release candidate (debug-signed)
+      # Gradle needs a keystore file, not the base64 secret. The decoded file lives only in this
+      # job's runner temp directory, is never logged, and is removed below.
+      - name: Decode the release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          keystore_path="$RUNNER_TEMP/release.keystore"
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          echo "ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      # app/build.gradle.kts signs release from these env vars (plus ANDROID_KEYSTORE_PATH set
+      # above), with v1/v2/v3 schemes, and never falls back to the debug key.
+      - name: Build the signed release APK
         run: ./gradlew assembleRelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
+
+      - name: Remove the decoded keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+
+      # Refuses to publish anything not signed by exactly the pinned release certificate
+      # (ANDROID_KEYSTORE_SHA256), and names a debug-key fallback explicitly. Runs before any
+      # upload or attach, from the main checkout above.
+      - name: Verify the release signature
+        env:
+          ANDROID_KEYSTORE_SHA256: ${{ secrets.ANDROID_KEYSTORE_SHA256 }}
+        run: >-
+          python3 verification-gate/.github/scripts/verify_release_signature.py
+          app/build/outputs/apk/release/*.apk
 
       - name: Upload release candidate artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: app-release-candidate
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
