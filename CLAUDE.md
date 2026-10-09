@@ -76,3 +76,5 @@ the rule above, even though it didn't write the underlying commits.
   a design-tokens Maven artifact (`com.derekwinters.chores:design-tokens`)
   from GitHub Packages, configured in `settings.gradle.kts`.
 - Snapshot testing (Roborazzi) is documented in `docs/snapshot-testing.md`.
+
+@.ai-sdlc/house-rules.md
