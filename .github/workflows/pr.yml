@@ -22,7 +22,7 @@ jobs:
         run: python3 -m unittest discover -s .github/scripts/tests -v
 
       - name: Set up JDK 17
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: "17"
@@ -37,7 +37,7 @@ jobs:
           packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       - name: Run unit tests
         run: ./gradlew test
@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload snapshot diffs on failure
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: snapshot-diffs
           path: |
@@ -82,7 +82,7 @@ jobs:
         run: echo "sha=$(echo '${{ github.event.pull_request.head.sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
       - name: Upload debug APK artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-debug-${{ steps.short-sha.outputs.sha }}
           path: app/build/outputs/apk/debug/*.apk
@@ -109,7 +109,7 @@ jobs:
         run: node /tmp/composite-gallery.mjs --web /tmp/web/.visual-baselines --android app/src/test/snapshots --out gallery/index.html
 
       - name: Upload gallery artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: composite-gallery
           path: gallery/index.html
